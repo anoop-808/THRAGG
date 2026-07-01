@@ -1,0 +1,1888 @@
+{
+    "metadata": {
+        "framework": "THRAGG",
+        "version": "1.0.0",
+        "timestamp": "2026-07-01T13:19:04Z",
+        "execution_time": 0.0793,
+        "input_folder": "mixed_test",
+        "modules_executed": [
+            "modules.zap",
+            "modules.logs",
+            "modules.nmap",
+            "modules.cloud",
+            "modules.identity"
+        ],
+        "modules_completed": [
+            "modules.logs",
+            "modules.nmap",
+            "modules.cloud",
+            "modules.identity"
+        ],
+        "modules_completed_with_warnings": [],
+        "modules_failed": [
+            "modules.zap"
+        ],
+        "files_analyzed": 5
+    },
+    "modules": [
+        {
+            "module": "modules.zap",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/2026-06-26-ZAP-Report-.html",
+            "status": "failed",
+            "metadata": {
+                "module": "zap",
+                "module_version": "1.1.0",
+                "phase": "Phase 1: Report Ingestion",
+                "status": "failed",
+                "timestamp": "2026-07-01T13:19:04Z",
+                "execution_time": 0.0513,
+                "report_path": "/home/karna/Projects/THRAGG/mixed_test/2026-06-26-ZAP-Report-.html"
+            }
+        },
+        {
+            "module": "modules.logs",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/auth.log",
+            "status": "completed",
+            "metadata": {
+                "module": "logs",
+                "module_version": "3.0.0",
+                "target": "/home/karna/Projects/THRAGG/mixed_test/auth.log",
+                "timestamp": "2026-07-01T13:19:04.696940+00:00",
+                "execution_time": 0.0,
+                "status": "completed",
+                "returncode": 0
+            }
+        },
+        {
+            "module": "modules.nmap",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/scan.xml",
+            "status": "completed",
+            "metadata": {
+                "module": "network",
+                "module_version": "2.0.0",
+                "tool": "Nmap",
+                "timestamp": "2026-07-01T13:19:04.705394+00:00",
+                "execution_time": 0.0004,
+                "files_processed": 1,
+                "total_findings": 23,
+                "artifacts": [
+                    "/home/karna/Projects/THRAGG/mixed_test/scan.xml"
+                ]
+            }
+        },
+        {
+            "module": "modules.cloud",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/subscription.json",
+            "status": "completed",
+            "metadata": {
+                "module": "cloud",
+                "module_version": "1.1.0",
+                "tool": "Azure Cloud Security",
+                "input_path": "/home/karna/Projects/THRAGG/mixed_test/subscription.json",
+                "timestamp": "2026-07-01T13:19:04.720564+00:00",
+                "execution_time": 0.0001,
+                "files_processed": 1,
+                "folders_processed": 0,
+                "pipeline": [
+                    "init",
+                    "collect_files: 1 found",
+                    "parse: 1 files processed",
+                    "analyze: 0 findings generated",
+                    "summary"
+                ],
+                "processing_stats": {
+                    "subscription_parsed": 1,
+                    "vm_parsed": 0,
+                    "storage_parsed": 0,
+                    "keyvault_parsed": 0,
+                    "nsg_parsed": 0,
+                    "vnet_parsed": 0,
+                    "public_ip_parsed": 0,
+                    "unknown_parsed": 0
+                },
+                "module_health": {
+                    "subscription": "PASS",
+                    "vm": "WARNING",
+                    "storage": "WARNING",
+                    "keyvault": "WARNING",
+                    "nsg": "WARNING",
+                    "vnet": "WARNING",
+                    "public_ip": "WARNING",
+                    "unknown": "WARNING"
+                },
+                "rule_statistics": {}
+            }
+        },
+        {
+            "module": "modules.identity",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+            "status": "completed",
+            "metadata": {
+                "module": "identity",
+                "module_version": "1.2.0",
+                "tool": "Azure / Entra ID",
+                "input_path": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                "timestamp": "2026-07-01T13:19:04.723196+00:00",
+                "execution_time": 0.0002,
+                "files_processed": 1,
+                "folders_processed": 0,
+                "pipeline": [
+                    "init",
+                    "collect_files: 1 found",
+                    "parse: 1 files",
+                    "analyze: 31 findings",
+                    "summary"
+                ],
+                "processing_stats": {
+                    "users_parsed": 15,
+                    "groups_parsed": 0,
+                    "applications_parsed": 0,
+                    "service_principals_parsed": 0,
+                    "role_assignments_parsed": 0,
+                    "subscriptions_parsed": 0
+                },
+                "module_health": {
+                    "users": "PASS",
+                    "groups": "WARNING",
+                    "applications": "WARNING",
+                    "service_principals": "WARNING",
+                    "role_assignments": "WARNING",
+                    "subscriptions": "WARNING"
+                },
+                "rule_statistics": {
+                    "IDN-USR-003": 15,
+                    "IDN-USR-004": 15,
+                    "IDN-USR-001": 1
+                }
+            }
+        }
+    ],
+    "summary": {
+        "total_files_analyzed": 5,
+        "modules_executed": 5,
+        "modules_completed": 4,
+        "modules_completed_with_warnings": 0,
+        "modules_succeeded": 4,
+        "modules_failed": 1,
+        "logs.failed_logins": 3,
+        "logs.successful_logins": 0,
+        "logs.invalid_users": 0,
+        "logs.authentication_failures": 0,
+        "logs.sudo_events": 0,
+        "logs.session_open_events": 0,
+        "logs.session_close_events": 0,
+        "logs.cron_events": 0,
+        "logs.illegal_port_attempts": 0,
+        "logs.protocol_mismatches": 0,
+        "logs.too_many_login_events": 0,
+        "logs.unique_usernames": 3,
+        "logs.unique_source_ips": 1,
+        "logs.high_severity_events": 0,
+        "logs.total_events": 3,
+        "nmap.total_findings": 23,
+        "nmap.severity_counts": {
+            "Critical": 1,
+            "High": 4,
+            "Medium": 16,
+            "Low": 2,
+            "Informational": 0
+        },
+        "nmap.highest_severity": "Critical",
+        "nmap.unique_hosts": 1,
+        "nmap.unique_open_ports": 23,
+        "nmap.hosts": [
+            "192.168.56.20"
+        ],
+        "cloud.total_findings": 0,
+        "cloud.severity_counts": {
+            "Critical": 0,
+            "High": 0,
+            "Medium": 0,
+            "Low": 0,
+            "Informational": 0
+        },
+        "cloud.highest_severity": null,
+        "cloud.top_category": null,
+        "cloud.most_fired_rule": null,
+        "cloud.rule_statistics": {},
+        "cloud.resources_parsed": 1,
+        "cloud.files_processed": 1,
+        "cloud.profile": "all",
+        "identity.total_findings": 31,
+        "identity.severity_counts": {
+            "Critical": 0,
+            "High": 15,
+            "Medium": 1,
+            "Low": 15,
+            "Informational": 0
+        },
+        "identity.highest_severity": "High",
+        "identity.top_category": "MFA",
+        "identity.most_fired_rule": "IDN-USR-003",
+        "identity.rule_statistics": {
+            "IDN-USR-003": 15,
+            "IDN-USR-004": 15,
+            "IDN-USR-001": 1
+        },
+        "identity.files_processed": 1,
+        "identity.profile": "all",
+        "identity.identity_counts": {
+            "users": 15,
+            "groups": 0,
+            "applications": 0,
+            "service_principals": 0,
+            "role_assignments": 0,
+            "subscriptions": 0
+        }
+    },
+    "details": {
+        "zap::2026-06-26-ZAP-Report-.html": {
+            "findings": []
+        },
+        "logs::auth.log": {
+            "failed_login_events": [
+                {
+                    "event": "failed_login",
+                    "severity": "Medium",
+                    "category": "Authentication",
+                    "mitre": "T1110",
+                    "confidence": "Medium",
+                    "event_source": "auth.log",
+                    "timestamp": "Jun 8 10:00:00",
+                    "line_number": 1,
+                    "raw_line": "Jun 8 10:00:00 sshd Failed password for invalid user admin from 192.168.56.20",
+                    "username": "admin",
+                    "source_ip": "192.168.56.20"
+                },
+                {
+                    "event": "failed_login",
+                    "severity": "Medium",
+                    "category": "Authentication",
+                    "mitre": "T1110",
+                    "confidence": "Medium",
+                    "event_source": "auth.log",
+                    "timestamp": "Jun 8 10:01:00",
+                    "line_number": 2,
+                    "raw_line": "Jun 8 10:01:00 sshd Failed password for invalid user root from 192.168.56.20",
+                    "username": "root",
+                    "source_ip": "192.168.56.20"
+                },
+                {
+                    "event": "failed_login",
+                    "severity": "Medium",
+                    "category": "Authentication",
+                    "mitre": "T1110",
+                    "confidence": "Medium",
+                    "event_source": "auth.log",
+                    "timestamp": "Jun 8 10:02:00",
+                    "line_number": 3,
+                    "raw_line": "Jun 8 10:02:00 sshd Failed password for invalid user test from 192.168.56.20",
+                    "username": "test",
+                    "source_ip": "192.168.56.20"
+                }
+            ],
+            "successful_login_events": [],
+            "invalid_user_events": [],
+            "authentication_failure_events": [],
+            "sudo_events": [],
+            "session_open_events": [],
+            "session_close_events": [],
+            "cron_events": [],
+            "illegal_port_events": [],
+            "protocol_mismatch_events": [],
+            "too_many_login_events": [],
+            "findings": [
+                {
+                    "id": "LOG-001",
+                    "title": "Repeated Failed Login Attempts",
+                    "severity": "Medium",
+                    "confidence": "Medium",
+                    "category": "Authentication",
+                    "description": "Multiple failed password attempts were observed, indicating possible credential guessing.",
+                    "evidence": {
+                        "event_count": 3,
+                        "source_ips": [
+                            "192.168.56.20"
+                        ],
+                        "usernames": [
+                            "admin",
+                            "root",
+                            "test"
+                        ],
+                        "line_numbers": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "mitre": "T1110",
+                    "recommendation": "Review source IPs for repeated failures and consider rate-limiting or lockout policies."
+                }
+            ]
+        },
+        "nmap::scan.xml": {
+            "findings": [
+                {
+                    "rule_id": "NMAP-192.168.56.20-21",
+                    "title": "Open Port 21/tcp (ftp)",
+                    "severity": "High",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 21,
+                    "protocol": "tcp",
+                    "service": "ftp",
+                    "product": "vsftpd",
+                    "version": "2.3.4",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 40.3,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 21,
+                        "protocol": "tcp",
+                        "service_name": "ftp",
+                        "port_state": "open",
+                        "product_version": "vsftpd 2.3.4"
+                    },
+                    "recommendation": "FTP is insecure. Use SFTP or SCP instead."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-22",
+                    "title": "Open Port 22/tcp (ssh)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 22,
+                    "protocol": "tcp",
+                    "service": "ssh",
+                    "product": "OpenSSH",
+                    "version": "4.7p1 Debian 8ubuntu1",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 22,
+                        "protocol": "tcp",
+                        "service_name": "ssh",
+                        "port_state": "open",
+                        "product_version": "OpenSSH 4.7p1 Debian 8ubuntu1"
+                    },
+                    "recommendation": "Restrict SSH access to authorized networks. Use key-based authentication."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-23",
+                    "title": "Open Port 23/tcp (telnet)",
+                    "severity": "Critical",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 23,
+                    "protocol": "tcp",
+                    "service": "telnet",
+                    "product": "Linux telnetd",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 50.4,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 23,
+                        "protocol": "tcp",
+                        "service_name": "telnet",
+                        "port_state": "open",
+                        "product_version": "Linux telnetd"
+                    },
+                    "recommendation": "Telnet is deprecated. Replace with SSH."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-25",
+                    "title": "Open Port 25/tcp (smtp)",
+                    "severity": "Medium",
+                    "confidence": "Medium",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 25,
+                    "protocol": "tcp",
+                    "service": "smtp",
+                    "product": "Postfix smtpd",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 19.6,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 25,
+                        "protocol": "tcp",
+                        "service_name": "smtp",
+                        "port_state": "open",
+                        "product_version": "Postfix smtpd"
+                    },
+                    "recommendation": "Verify SMTP relay restrictions. Enable TLS."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-53",
+                    "title": "Open Port 53/tcp (domain)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 53,
+                    "protocol": "tcp",
+                    "service": "domain",
+                    "product": "ISC BIND",
+                    "version": "9.4.2",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 53,
+                        "protocol": "tcp",
+                        "service_name": "domain",
+                        "port_state": "open",
+                        "product_version": "ISC BIND 9.4.2"
+                    },
+                    "recommendation": "Review necessity of open port 53. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-80",
+                    "title": "Open Port 80/tcp (http)",
+                    "severity": "Low",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 80,
+                    "protocol": "tcp",
+                    "service": "http",
+                    "product": "Apache httpd",
+                    "version": "2.2.8",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 12.6,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 80,
+                        "protocol": "tcp",
+                        "service_name": "http",
+                        "port_state": "open",
+                        "product_version": "Apache httpd 2.2.8"
+                    },
+                    "recommendation": "Ensure HTTPS is available. Redirect HTTP to HTTPS."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-111",
+                    "title": "Open Port 111/tcp (rpcbind)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 111,
+                    "protocol": "tcp",
+                    "service": "rpcbind",
+                    "product": "",
+                    "version": "2",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 111,
+                        "protocol": "tcp",
+                        "service_name": "rpcbind",
+                        "port_state": "open",
+                        "product_version": "2"
+                    },
+                    "recommendation": "Review necessity of open port 111. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-139",
+                    "title": "Open Port 139/tcp (netbios-ssn)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 139,
+                    "protocol": "tcp",
+                    "service": "netbios-ssn",
+                    "product": "Samba smbd",
+                    "version": "3.X - 4.X",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 139,
+                        "protocol": "tcp",
+                        "service_name": "netbios-ssn",
+                        "port_state": "open",
+                        "product_version": "Samba smbd 3.X - 4.X"
+                    },
+                    "recommendation": "Review necessity of open port 139. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-445",
+                    "title": "Open Port 445/tcp (netbios-ssn)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 445,
+                    "protocol": "tcp",
+                    "service": "netbios-ssn",
+                    "product": "Samba smbd",
+                    "version": "3.X - 4.X",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 445,
+                        "protocol": "tcp",
+                        "service_name": "netbios-ssn",
+                        "port_state": "open",
+                        "product_version": "Samba smbd 3.X - 4.X"
+                    },
+                    "recommendation": "Review necessity of open port 445. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-512",
+                    "title": "Open Port 512/tcp (exec)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 512,
+                    "protocol": "tcp",
+                    "service": "exec",
+                    "product": "netkit-rsh rexecd",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 512,
+                        "protocol": "tcp",
+                        "service_name": "exec",
+                        "port_state": "open",
+                        "product_version": "netkit-rsh rexecd"
+                    },
+                    "recommendation": "Review necessity of open port 512. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-513",
+                    "title": "Open Port 513/tcp (login)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 513,
+                    "protocol": "tcp",
+                    "service": "login",
+                    "product": "",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 513,
+                        "protocol": "tcp",
+                        "service_name": "login",
+                        "port_state": "open",
+                        "product_version": "unknown"
+                    },
+                    "recommendation": "Review necessity of open port 513. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-514",
+                    "title": "Open Port 514/tcp (shell)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 514,
+                    "protocol": "tcp",
+                    "service": "shell",
+                    "product": "Netkit rshd",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 514,
+                        "protocol": "tcp",
+                        "service_name": "shell",
+                        "port_state": "open",
+                        "product_version": "Netkit rshd"
+                    },
+                    "recommendation": "Review necessity of open port 514. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-1099",
+                    "title": "Open Port 1099/tcp (java-rmi)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 1099,
+                    "protocol": "tcp",
+                    "service": "java-rmi",
+                    "product": "GNU Classpath grmiregistry",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 1099,
+                        "protocol": "tcp",
+                        "service_name": "java-rmi",
+                        "port_state": "open",
+                        "product_version": "GNU Classpath grmiregistry"
+                    },
+                    "recommendation": "Review necessity of open port 1099. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-1524",
+                    "title": "Open Port 1524/tcp (bindshell)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 1524,
+                    "protocol": "tcp",
+                    "service": "bindshell",
+                    "product": "Metasploitable root shell",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 1524,
+                        "protocol": "tcp",
+                        "service_name": "bindshell",
+                        "port_state": "open",
+                        "product_version": "Metasploitable root shell"
+                    },
+                    "recommendation": "Review necessity of open port 1524. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-2049",
+                    "title": "Open Port 2049/tcp (nfs)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 2049,
+                    "protocol": "tcp",
+                    "service": "nfs",
+                    "product": "",
+                    "version": "2-4",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 2049,
+                        "protocol": "tcp",
+                        "service_name": "nfs",
+                        "port_state": "open",
+                        "product_version": "2-4"
+                    },
+                    "recommendation": "Review necessity of open port 2049. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-2121",
+                    "title": "Open Port 2121/tcp (ftp)",
+                    "severity": "High",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 2121,
+                    "protocol": "tcp",
+                    "service": "ftp",
+                    "product": "ProFTPD",
+                    "version": "1.3.1",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 40.3,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 2121,
+                        "protocol": "tcp",
+                        "service_name": "ftp",
+                        "port_state": "open",
+                        "product_version": "ProFTPD 1.3.1"
+                    },
+                    "recommendation": "FTP is insecure. Use SFTP or SCP instead."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-3306",
+                    "title": "Open Port 3306/tcp (mysql)",
+                    "severity": "High",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 3306,
+                    "protocol": "tcp",
+                    "service": "mysql",
+                    "product": "MySQL",
+                    "version": "5.0.51a-3ubuntu5",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 40.3,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 3306,
+                        "protocol": "tcp",
+                        "service_name": "mysql",
+                        "port_state": "open",
+                        "product_version": "MySQL 5.0.51a-3ubuntu5"
+                    },
+                    "recommendation": "Move to private network. Disable remote root."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-5432",
+                    "title": "Open Port 5432/tcp (postgresql)",
+                    "severity": "High",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 5432,
+                    "protocol": "tcp",
+                    "service": "postgresql",
+                    "product": "PostgreSQL DB",
+                    "version": "8.3.0 - 8.3.7",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 40.3,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 5432,
+                        "protocol": "tcp",
+                        "service_name": "postgresql",
+                        "port_state": "open",
+                        "product_version": "PostgreSQL DB 8.3.0 - 8.3.7"
+                    },
+                    "recommendation": "Review necessity of open port 5432. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-5900",
+                    "title": "Open Port 5900/tcp (vnc)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 5900,
+                    "protocol": "tcp",
+                    "service": "vnc",
+                    "product": "VNC",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 5900,
+                        "protocol": "tcp",
+                        "service_name": "vnc",
+                        "port_state": "open",
+                        "product_version": "VNC"
+                    },
+                    "recommendation": "Review necessity of open port 5900. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-6000",
+                    "title": "Open Port 6000/tcp (X11)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 6000,
+                    "protocol": "tcp",
+                    "service": "X11",
+                    "product": "",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 6000,
+                        "protocol": "tcp",
+                        "service_name": "X11",
+                        "port_state": "open",
+                        "product_version": "unknown"
+                    },
+                    "recommendation": "Review necessity of open port 6000. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-6667",
+                    "title": "Open Port 6667/tcp (irc)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 6667,
+                    "protocol": "tcp",
+                    "service": "irc",
+                    "product": "UnrealIRCd",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 6667,
+                        "protocol": "tcp",
+                        "service_name": "irc",
+                        "port_state": "open",
+                        "product_version": "UnrealIRCd"
+                    },
+                    "recommendation": "Review necessity of open port 6667. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-8009",
+                    "title": "Open Port 8009/tcp (ajp13)",
+                    "severity": "Medium",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 8009,
+                    "protocol": "tcp",
+                    "service": "ajp13",
+                    "product": "Apache Jserv",
+                    "version": "",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 25.2,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 8009,
+                        "protocol": "tcp",
+                        "service_name": "ajp13",
+                        "port_state": "open",
+                        "product_version": "Apache Jserv"
+                    },
+                    "recommendation": "Review necessity of open port 8009. Close if not required."
+                },
+                {
+                    "rule_id": "NMAP-192.168.56.20-8180",
+                    "title": "Open Port 8180/tcp (http)",
+                    "severity": "Low",
+                    "confidence": "High",
+                    "category": "Network Reconnaissance",
+                    "asset": "192.168.56.20",
+                    "port": 8180,
+                    "protocol": "tcp",
+                    "service": "http",
+                    "product": "Apache Tomcat/Coyote JSP engine",
+                    "version": "1.1",
+                    "host_status": "up",
+                    "hostname": "unknown",
+                    "os": null,
+                    "source": "nmap",
+                    "risk_score": 12.6,
+                    "evidence": {
+                        "ip_address": "192.168.56.20",
+                        "port": 8180,
+                        "protocol": "tcp",
+                        "service_name": "http",
+                        "port_state": "open",
+                        "product_version": "Apache Tomcat/Coyote JSP engine 1.1"
+                    },
+                    "recommendation": "Ensure HTTPS is available. Redirect HTTP to HTTPS."
+                }
+            ]
+        },
+        "cloud::subscription.json": {
+            "subscription": [
+                {
+                    "subscription_id": "9d8f24ae-9ec0-4f43-92f6-544a61aa7201",
+                    "display_name": "Azure for Students",
+                    "state": "Enabled",
+                    "tenant_id": "5ee9f0f3-4862-4083-b722-627faadbdabc",
+                    "raw": {
+                        "environmentName": "AzureCloud",
+                        "homeTenantId": "5ee9f0f3-4862-4083-b722-627faadbdabc",
+                        "id": "9d8f24ae-9ec0-4f43-92f6-544a61aa7201",
+                        "isDefault": true,
+                        "managedByTenants": [],
+                        "name": "Azure for Students",
+                        "state": "Enabled",
+                        "tenantDefaultDomain": "girianoop808gmail.onmicrosoft.com",
+                        "tenantDisplayName": "Default Directory",
+                        "tenantId": "5ee9f0f3-4862-4083-b722-627faadbdabc",
+                        "user": {
+                            "name": "girianoop808@gmail.com",
+                            "type": "user"
+                        }
+                    }
+                }
+            ],
+            "vm": [],
+            "storage": [],
+            "keyvault": [],
+            "nsg": [],
+            "vnet": [],
+            "public_ip": [],
+            "unknown": []
+        },
+        "identity::users.json": {
+            "users": [
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Admin Root",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "admin.root@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Admin Root",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "admin.root@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Anoop SOC",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "anoop.soc@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Anoop SOC",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "anoop.soc@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Arjun IT",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "arjun.it@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Arjun IT",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "arjun.it@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Contractor user",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "contractor.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Contractor user",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "contractor.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Finance assistant",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "finance.assistant@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Finance assistant",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "finance.assistant@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-001",
+                    "rule_version": "1.0",
+                    "title": "Guest / External User Account Detected",
+                    "severity": "Medium",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Standard marker for external/guest identity. Deterministic.",
+                    "category": "Guest Accounts",
+                    "asset": "Giri Anoop Beeram",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078.004",
+                        "technique": "Valid Accounts: Cloud Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "upn": "girianoop808_gmail.com#EXT#@girianoop808gmail.onmicrosoft.com",
+                        "user_type": "Member"
+                    },
+                    "recommendation": "Review guest account necessity. Apply Conditional Access policies and restrict guest permissions via External Collaboration Settings.",
+                    "risk_score": 28.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Giri Anoop Beeram",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "girianoop808_gmail.com#EXT#@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Giri Anoop Beeram",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "girianoop808_gmail.com#EXT#@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Helpdesk User",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "helpdesk.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Helpdesk User",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "helpdesk.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "HR-Manager",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "hr.manager@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "HR-Manager",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "hr.manager@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Intern User",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "intern.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Intern User",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "intern.user@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "IT admin-1",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "it.admin1@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "IT admin-1",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "it.admin1@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Priya FInance",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "priya.finance@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Priya FInance",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "priya.finance@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Ravi HR",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "ravi.hr@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Ravi HR",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "ravi.hr@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "Security-admin",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "security.admin@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "Security-admin",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "security.admin@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "SOC analyst-1",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "soc.analyst1@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "SOC analyst-1",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "soc.analyst1@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                },
+                {
+                    "rule_id": "IDN-USR-003",
+                    "rule_version": "1.0",
+                    "title": "User Has No MFA Method Registered",
+                    "severity": "High",
+                    "confidence": "High",
+                    "confidence_score": 85,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed. Role data unavailable \u2014 confidence reduced.",
+                    "category": "MFA",
+                    "asset": "SOC manager",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1556",
+                        "technique": "Modify Authentication Process",
+                        "tactic": "Credential Access, Defense Evasion, Persistence"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "mfa_registered": false,
+                        "upn": "soc.manager@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Enforce MFA registration via Conditional Access or Authentication Strength policies. Require phishing-resistant methods where possible.",
+                    "risk_score": 40.3
+                },
+                {
+                    "rule_id": "IDN-USR-004",
+                    "rule_version": "1.0",
+                    "title": "Active Account With No Recorded Sign-In Activity",
+                    "severity": "Low",
+                    "confidence": "Confirmed",
+                    "confidence_score": 100,
+                    "confidence_rationale": "Field explicitly null in export. Absence confirmed.",
+                    "category": "Identity Hygiene",
+                    "asset": "SOC manager",
+                    "user": null,
+                    "role": null,
+                    "source": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+                    "object_id": null,
+                    "tool": "Azure / Entra ID",
+                    "mitre": {
+                        "technique_id": "T1078",
+                        "technique": "Valid Accounts",
+                        "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+                    },
+                    "cwe": null,
+                    "evidence": {
+                        "last_sign_in": null,
+                        "upn": "soc.manager@girianoop808gmail.onmicrosoft.com"
+                    },
+                    "recommendation": "Investigate accounts with no sign-in history. Disable or remove accounts that are no longer needed.",
+                    "risk_score": 10.0
+                }
+            ],
+            "groups": [],
+            "applications": [],
+            "service_principals": [],
+            "rbac": [],
+            "tenant": [],
+            "unknown": []
+        }
+    },
+    "artifacts": {
+        "zap::2026-06-26-ZAP-Report-.html": {},
+        "logs::auth.log": {
+            "raw_log": "/home/karna/Projects/THRAGG/mixed_test/auth.log"
+        },
+        "nmap::scan.xml": {
+            "input_files": [
+                "/home/karna/Projects/THRAGG/mixed_test/scan.xml"
+            ]
+        },
+        "cloud::subscription.json": {
+            "input_path": "/home/karna/Projects/THRAGG/mixed_test/subscription.json",
+            "output_dir": "thragg_results"
+        },
+        "identity::users.json": {
+            "input_path": "/home/karna/Projects/THRAGG/mixed_test/users.json",
+            "files": [
+                "/home/karna/Projects/THRAGG/mixed_test/users.json"
+            ]
+        }
+    },
+    "errors": [
+        {
+            "module": "modules.zap",
+            "file": "/home/karna/Projects/THRAGG/mixed_test/2026-06-26-ZAP-Report-.html",
+            "error": "Report is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+        }
+    ]
+}

@@ -1,1548 +1,1262 @@
-"""THRAGG cloud.py
-Azure cloud resource security analysis module.
-Parses cloud exports, evaluates security rules, produces THRAGG findings.
-No Azure API calls. No deployments. Evidence in. Findings out.
 """
+THRAGG Module: cloud
+Version: 1.1.0
+
+Public API:
+    run(input_path, profile="all")       -> Mode 1  Evidence Ingestion (JSON export files)
+    run_cli(output_dir, profile="all")   -> Mode 2  Azure CLI collection → run()
+    run_api(output_dir, profile="all",
+            subscription_id=None)        -> Mode 3  Azure REST API collection → run()
+
+Contract (frozen, matches THRAGG standard):
+    {
+        "metadata": {...},
+        "summary": {...},
+        "details": {...},
+        "artifacts": {...},
+        "errors": [...]
+    }
+
+Architecture:
+    Mode 1 is the brain. Modes 2 and 3 only collect evidence and call run().
+    One parser. One normalization pipeline. One summary builder.
+"""
+
+from __future__ import annotations
 
 import os
 import json
 import time
-from typing import Dict, List, Optional
+import shutil
+import subprocess
+import urllib.request
+import urllib.error
+from typing import Dict, List, Optional, Any, Tuple
 
-from modules.base import (
-    Pipeline,
-    build_metadata,
-    finalize_metadata,
-    build_result,
-    build_summary,
-    build_empty_details,
-    build_processing_stats,
-    build_module_health,
-    build_rule_statistics,
-    collect_files,
-    load_json_file,
-    normalize_finding,
-    compute_confidence,
-    compute_risk_score,
-    safe_get,
-    ensure_list,
-    ensure_dict,
-    ModuleError,
-    ParserError,
-)
-# ═══════════════════════════════════════════════════════════════════════════════
-# Module Constants
-# ═══════════════════════════════════════════════════════════════════════════════
+from modules import base as base_module
 
 MODULE_NAME = "cloud"
-MODULE_VERSION = "1.0.0"
-TOOL_NAME = "Azure / ARM"
+MODULE_VERSION = "1.1.0"
+TOOL_NAME = "Azure Cloud Security"
+OUTPUT_DIR = "thragg_results"
 SUPPORTED_FORMATS = {".json"}
 
-# Maps filename stems to resource type keys.
-# Cloud.py detects resource type from filename automatically.
-RESOURCE_TYPE_MAP = {
-    "vm": "virtual_machines",
-    "vms": "virtual_machines",
-    "virtual_machines": "virtual_machines",
-    "virtualmachines": "virtual_machines",
-    "storage": "storage_accounts",
-    "storage_accounts": "storage_accounts",
-    "storageaccounts": "storage_accounts",
-    "keyvault": "key_vaults",
-    "keyvaults": "key_vaults",
-    "key_vaults": "key_vaults",
-    "key_vault": "key_vaults",
-    "nsg": "network_security_groups",
-    "nsgs": "network_security_groups",
-    "network_security_groups": "network_security_groups",
-    "networksecuritygroups": "network_security_groups",
-    "vnet": "vnets",
-    "vnets": "vnets",
-    "virtual_networks": "vnets",
-    "virtualnetworks": "vnets",
-    "public_ip": "public_ips",
-    "public_ips": "public_ips",
-    "publicips": "public_ips",
-    "publicipaddresses": "public_ips",
-    "resource_groups": "resource_groups",
-    "resourcegroups": "resource_groups",
-    "subscription": "subscriptions",
-    "subscriptions": "subscriptions",
+# ─────────────────────────────────────────────────────────────────────────────
+# Timeout Constants
+# ─────────────────────────────────────────────────────────────────────────────
+
+AUTH_TIMEOUT = 30
+CLI_TIMEOUT = 120
+REST_TIMEOUT = 60
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Collection Profiles
+# Controls which resource types are collected in Modes 2 and 3.
+# Does NOT change parser behavior.
+# ─────────────────────────────────────────────────────────────────────────────
+
+COLLECTION_PROFILES: Dict[str, List[str]] = {
+    "all": [
+        "subscription", "vm", "storage", "keyvault", "nsg", "vnet", "public_ip"
+    ],
+    "network": ["nsg", "vnet", "public_ip"],
+    "compute": ["vm"],
+    "storage": ["storage", "keyvault"],
+    "identity": ["subscription"],
 }
 
-# Cloud-specific asset exposure weights.
-# Extends base ASSET_EXPOSURE for cloud resource types.
-CLOUD_ASSET_EXPOSURE = {
-    "subscription": 1.0,
-    "virtual_machine": 0.95,
-    "storage": 0.90,
-    "key_vault": 0.90,
-    "network": 0.85,
-    "public_ip": 0.85,
-    "resource_group": 0.70,
-    "monitoring": 0.65,
+# ─────────────────────────────────────────────────────────────────────────────
+# Azure CLI command table
+# ─────────────────────────────────────────────────────────────────────────────
+
+CLI_COMMANDS: Dict[str, Tuple[List[str], str]] = {
+    "subscription": (["az", "account", "show"], "subscription.json"),
+    "vm":           (["az", "vm", "list", "--output", "json"], "vm.json"),
+    "storage":      (["az", "storage", "account", "list", "--output", "json"], "storage.json"),
+    "keyvault":     (["az", "keyvault", "list", "--output", "json"], "keyvault.json"),
+    "nsg":          (["az", "network", "nsg", "list", "--output", "json"], "nsg.json"),
+    "vnet":         (["az", "network", "vnet", "list", "--output", "json"], "vnet.json"),
+    "public_ip":    (["az", "network", "public-ip", "list", "--output", "json"], "publicip.json"),
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Azure REST API resource table
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Entry Point
-# ═══════════════════════════════════════════════════════════════════════════════
+REST_RESOURCES: Dict[str, Tuple[str, str, str]] = {
+    # resource_type -> (api_version, url_path_template, output_filename)
+    "subscription": (
+        "2022-12-01",
+        "/subscriptions/{subscription_id}",
+        "subscription.json",
+    ),
+    "vm": (
+        "2023-03-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.Compute/virtualMachines",
+        "vm.json",
+    ),
+    "storage": (
+        "2023-01-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.Storage/storageAccounts",
+        "storage.json",
+    ),
+    "keyvault": (
+        "2023-02-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.KeyVault/vaults",
+        "keyvault.json",
+    ),
+    "nsg": (
+        "2023-05-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.Network/networkSecurityGroups",
+        "nsg.json",
+    ),
+    "vnet": (
+        "2023-05-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.Network/virtualNetworks",
+        "vnet.json",
+    ),
+    "public_ip": (
+        "2023-05-01",
+        "/subscriptions/{subscription_id}/providers/Microsoft.Network/publicIPAddresses",
+        "publicip.json",
+    ),
+}
 
-def run(input_path: str) -> Dict:
+AZURE_MANAGEMENT_BASE = "https://management.azure.com"
+
+# ═════════════════════════════════════════════════════════════════════════════
+# MODE 1 — Evidence Ingestion & Analysis (the brain)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def run(input_path: str, profile: str = "all") -> Dict:
     """
-    Cloud module entry point.
-
-    Args:
-        input_path: Path to cloud export file or folder.
-
-    Returns:
-        Standard THRAGG result dict.
+    Mode 1: Accept a path to one Azure JSON export file or a folder of exports.
+    Parse, analyze, normalize, summarize, and return the THRAGG contract.
     """
     start_time = time.time()
-    pipeline = Pipeline()
+    pipeline = base_module.Pipeline()
+    errors: List[str] = []
 
-    # ── Bootstrap ────────────────────────────────────────────────────────────
-    metadata = build_metadata(MODULE_NAME, MODULE_VERSION, TOOL_NAME, input_path)
-    result = build_result(metadata)
-    errors = result["errors"]
+    metadata = base_module.build_metadata(MODULE_NAME, MODULE_VERSION, TOOL_NAME, input_path)
+    pipeline.add("init")
 
-    details = build_empty_details(
-        "compute",
-        "storage",
-        "network",
-        "secrets",
-        "governance",
-        "monitoring",
+    # ── Collect files ──────────────────────────────────────────────────────
+    files = base_module.collect_files(input_path, SUPPORTED_FORMATS, errors)
+    pipeline.add(f"collect_files: {len(files)} found")
+
+    # ── Parse each file ────────────────────────────────────────────────────
+    details = base_module.build_empty_details(
+        "subscription", "vm", "storage", "keyvault", "nsg", "vnet", "public_ip", "unknown"
     )
+    all_findings: List[Dict] = []
+    files_processed = 0
 
-    cloud_store = _empty_cloud_store()
-    findings: List[Dict] = []
-    pipeline.add("bootstrap")
-
-    # ── Collect Files ─────────────────────────────────────────────────────────
-    files = collect_files(input_path, SUPPORTED_FORMATS, errors)
-    if not files:
-        result["errors"] = errors
-        return result
-
-    metadata["files_processed"] = len(files)
-    pipeline.add("collect_files")
-
-    # ── Detect, Load, Parse ───────────────────────────────────────────────────
     for filepath in files:
-        resource_type = _detect_resource_type(filepath)
-        if not resource_type:
-            errors.append(f"Could not detect resource type for: {filepath}")
+        data, load_error = base_module.load_json_file(filepath)
+        if load_error:
+            errors.append(load_error)
             continue
 
-        data, err = load_json_file(filepath)
-        if err:
-            errors.append(err)
-            continue
+        resource_type = _detect_resource_type(filepath, data)
+        parsed_resources, parse_errors = _parse_resource(resource_type, data, filepath)
+        errors.extend(parse_errors)
 
-        records = ensure_list(data)
-        _parse_resource(resource_type, records, cloud_store, errors)
+        bucket = resource_type if resource_type in details else "unknown"
+        details[bucket].extend(parsed_resources)
 
-    pipeline.add("parse_resources")
+        findings, finding_errors = _analyze_resources(resource_type, parsed_resources, filepath)
+        errors.extend(finding_errors)
+        all_findings.extend(findings)
 
-    # ── Run Rules ─────────────────────────────────────────────────────────────
-    findings.extend(_rules_vm(cloud_store["virtual_machines"]))
-    findings.extend(_rules_storage(cloud_store["storage_accounts"]))
-    findings.extend(_rules_keyvault(cloud_store["key_vaults"]))
-    findings.extend(_rules_nsg(cloud_store["network_security_groups"]))
-    findings.extend(_rules_network(cloud_store["vnets"]))
-    findings.extend(_rules_public_ip(cloud_store["public_ips"]))
-    findings.extend(_rules_resource_group(cloud_store["resource_groups"]))
-    findings.extend(_rules_subscription(cloud_store["subscriptions"]))
-    pipeline.add("rules")
+        files_processed += 1
 
-    # ── Categorize Findings ───────────────────────────────────────────────────
-    details = _categorize_findings(findings, details)
-    pipeline.add("categorize")
+    pipeline.add(f"parse: {files_processed} files processed")
+    pipeline.add(f"analyze: {len(all_findings)} findings generated")
 
-    # ── Build Metadata Stats ──────────────────────────────────────────────────
-    metadata["processing_stats"] = build_processing_stats(cloud_store)
-    metadata["module_health"] = build_module_health(cloud_store)
-    rule_stats = build_rule_statistics(findings)
-    metadata["rule_statistics"] = rule_stats
-    pipeline.add("stats")
-
-    # ── Build Summary ─────────────────────────────────────────────────────────
-    extra_summary = _build_cloud_summary(cloud_store, findings)
-    result["summary"] = build_summary(
-        findings,
-        rule_stats=rule_stats,
-        extra_summary=extra_summary,
-    )
+    # ── Summary ────────────────────────────────────────────────────────────
+    rule_stats = base_module.build_rule_statistics(all_findings)
+    extra = {
+        "resources_parsed": sum(len(v) for v in details.values()),
+        "files_processed": files_processed,
+        "profile": profile,
+    }
+    summary = base_module.build_summary(all_findings, rule_stats=rule_stats, extra_summary=extra)
     pipeline.add("summary")
 
-    # ── Finalize ──────────────────────────────────────────────────────────────
-    elapsed = time.time() - start_time
-    finalize_metadata(metadata, elapsed, pipeline)
+    # ── Finalize metadata ──────────────────────────────────────────────────
+    metadata["files_processed"] = files_processed
+    metadata["processing_stats"] = base_module.build_processing_stats(details)
+    metadata["module_health"] = base_module.build_module_health(details)
+    metadata["rule_statistics"] = rule_stats
+    base_module.finalize_metadata(metadata, time.time() - start_time, pipeline)
 
-    result["metadata"] = metadata
-    result["details"] = details
-    result["errors"] = errors
+    artifacts = {
+        "input_path": input_path,
+        "output_dir": OUTPUT_DIR,
+    }
 
-    pipeline.add("complete")
-    return result
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Cloud Store
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _empty_cloud_store() -> Dict[str, List]:
-    """Initialize empty cloud resource store."""
     return {
-        "virtual_machines": [],
-        "storage_accounts": [],
-        "network_security_groups": [],
-        "vnets": [],
-        "key_vaults": [],
-        "public_ips": [],
-        "resource_groups": [],
-        "subscriptions": [],
+        "metadata": metadata,
+        "summary": summary,
+        "details": details,
+        "artifacts": artifacts,
+        "errors": errors,
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Resource Type Detection
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# MODE 2 — Azure CLI Collection
+# ═════════════════════════════════════════════════════════════════════════════
 
-def _detect_resource_type(filepath: str) -> Optional[str]:
+def run_cli(output_dir: str = "thragg_results/cloud_cli", profile: str = "all") -> Dict:
     """
-    Detect Azure resource type from filename stem.
-
-    Examples:
-        vm.json            -> virtual_machines
-        storage.json       -> storage_accounts
-        nsg.json           -> network_security_groups
-        keyvault.json      -> key_vaults
-        public_ip.json     -> public_ips
-        subscriptions.json -> subscriptions
+    Mode 2: Validate Azure CLI, authenticate, collect exports via az commands,
+    write JSON files to output_dir, then hand everything off to run() (Mode 1).
     """
-    stem = os.path.splitext(os.path.basename(filepath))[0].lower().strip()
-    return RESOURCE_TYPE_MAP.get(stem)
+    errors: List[str] = []
+
+    # ── Validate CLI ───────────────────────────────────────────────────────
+    cli_ok, cli_error = _validate_cli()
+    if not cli_ok:
+        return _early_failure(errors, cli_error, output_dir, profile)
+
+    # ── Validate authentication ────────────────────────────────────────────
+    auth_ok, auth_error = _validate_authentication_cli()
+    if not auth_ok:
+        return _early_failure(errors, auth_error, output_dir, profile)
+
+    # ── Prepare output directory ───────────────────────────────────────────
+    dir_ok, dir_error = _ensure_output_directory(output_dir)
+    if not dir_ok:
+        return _early_failure(errors, dir_error, output_dir, profile)
+
+    # ── Collect resources ──────────────────────────────────────────────────
+    resource_types = COLLECTION_PROFILES.get(profile, COLLECTION_PROFILES["all"])
+
+    for resource_type in resource_types:
+        cmd_spec = CLI_COMMANDS.get(resource_type)
+        if not cmd_spec:
+            errors.append(f"No CLI command defined for resource type: {resource_type}")
+            continue
+
+        cmd, filename = cmd_spec
+        output_path = os.path.join(output_dir, filename)
+
+        success, cmd_error = _execute_cli_command(cmd, output_path)
+        if not success:
+            errors.append(f"CLI collection failed for {resource_type}: {cmd_error}")
+
+    # ── Hand off to Mode 1 ─────────────────────────────────────────────────
+    result = run(output_dir, profile=profile)
+    result["errors"] = errors + result["errors"]
+    return result
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Resource Parsers
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# MODE 3 — Azure REST API Collection
+# ═════════════════════════════════════════════════════════════════════════════
 
-def _parse_resource(
-    resource_type: str,
-    records: List[Dict],
-    cloud_store: Dict,
-    errors: List[str],
-) -> None:
+def run_api(
+    output_dir: str = "thragg_results/cloud_api",
+    profile: str = "all",
+    subscription_id: Optional[str] = None,
+) -> Dict:
     """
-    Dispatch records to the correct parser based on resource type.
-    Parsed objects are appended to cloud_store in place.
+    Mode 3: Acquire OAuth token via az CLI, call Azure REST API,
+    download JSON resources to output_dir, then hand off to run() (Mode 1).
+    """
+    errors: List[str] = []
+
+    # ── Acquire token ──────────────────────────────────────────────────────
+    token, token_error = _acquire_access_token()
+    if not token:
+        return _early_failure(errors, token_error, output_dir, profile)
+
+    # ── Resolve subscription ID ────────────────────────────────────────────
+    if not subscription_id:
+        subscription_id, sub_error = _get_subscription_id()
+        if not subscription_id:
+            return _early_failure(errors, sub_error, output_dir, profile)
+
+    # ── Prepare output directory ───────────────────────────────────────────
+    dir_ok, dir_error = _ensure_output_directory(output_dir)
+    if not dir_ok:
+        return _early_failure(errors, dir_error, output_dir, profile)
+
+    # ── Download resources ─────────────────────────────────────────────────
+    resource_types = COLLECTION_PROFILES.get(profile, COLLECTION_PROFILES["all"])
+
+    for resource_type in resource_types:
+        rest_spec = REST_RESOURCES.get(resource_type)
+        if not rest_spec:
+            errors.append(f"No REST spec defined for resource type: {resource_type}")
+            continue
+
+        api_version, url_template, filename = rest_spec
+        url_path = url_template.format(subscription_id=subscription_id)
+        full_url = f"{AZURE_MANAGEMENT_BASE}{url_path}?api-version={api_version}"
+        output_path = os.path.join(output_dir, filename)
+
+        success, dl_error = _download_json(full_url, token, output_path)
+        if not success:
+            errors.append(f"REST download failed for {resource_type}: {dl_error}")
+
+    # ── Hand off to Mode 1 ─────────────────────────────────────────────────
+    result = run(output_dir, profile=profile)
+    result["errors"] = errors + result["errors"]
+    return result
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — Resource Type Detection
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _detect_resource_type(filepath: str, data: Any) -> str:
+    """
+    Detect Azure resource type from filename and data structure.
+    Returns a key matching COLLECTION_PROFILES resource types.
+    """
+    filename = os.path.basename(filepath).lower()
+
+    # Filename-based hints
+    name_hints = {
+        "vm": "vm",
+        "storage": "storage",
+        "keyvault": "keyvault",
+        "key_vault": "keyvault",
+        "nsg": "nsg",
+        "vnet": "vnet",
+        "publicip": "public_ip",
+        "public_ip": "public_ip",
+        "subscription": "subscription",
+    }
+    for hint, resource_type in name_hints.items():
+        if hint in filename:
+            return resource_type
+
+    # Data-structure-based detection
+    sample = data[0] if isinstance(data, list) and data else data
+    if isinstance(sample, dict):
+        # Check type field (common in Azure resources)
+        rtype = (
+            base_module.safe_get(sample, "type") or
+            base_module.safe_get(sample, "resourceType") or
+            base_module.safe_get(sample, "kind") or
+            base_module.safe_get(sample, "properties", "type")
+        )
+        
+        if isinstance(rtype, str):
+            rtype_lower = rtype.lower()
+            if "virtualmachine" in rtype_lower:
+                return "vm"
+            if "storageaccount" in rtype_lower:
+                return "storage"
+            if "vaults" in rtype_lower or "keyvault" in rtype_lower:
+                return "keyvault"
+            if "networksecuritygroup" in rtype_lower:
+                return "nsg"
+            if "virtualnetwork" in rtype_lower:
+                return "vnet"
+            if "publicipaddress" in rtype_lower:
+                return "public_ip"
+
+        # Subscription detection
+        if base_module.safe_get(sample, "subscriptionId") and base_module.safe_get(sample, "tenantId"):
+            return "subscription"
+
+    return "unknown"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — Resource Parsers
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _parse_resource(resource_type: str, data: Any, filepath: str) -> Tuple[List[Dict], List[str]]:
+    """
+    Dispatch to the correct parser for the detected resource type.
+    Returns (parsed_list, errors).
     """
     parsers = {
-        "virtual_machines": _parse_vm,
-        "storage_accounts": _parse_storage,
-        "key_vaults": _parse_keyvault,
-        "network_security_groups": _parse_nsg,
-        "vnets": _parse_vnet,
-        "public_ips": _parse_public_ip,
-        "resource_groups": _parse_resource_group,
-        "subscriptions": _parse_subscription,
+        "subscription": _parse_subscription,
+        "vm":           _parse_vms,
+        "storage":      _parse_storage_accounts,
+        "keyvault":     _parse_keyvaults,
+        "nsg":          _parse_nsgs,
+        "vnet":         _parse_vnets,
+        "public_ip":    _parse_public_ips,
     }
 
     parser = parsers.get(resource_type)
     if not parser:
-        errors.append(f"No parser registered for resource type: {resource_type}")
-        return
+        return [], [f"No parser for resource type '{resource_type}' in {filepath}"]
 
-    for record in records:
-        if not isinstance(record, dict):
-            errors.append(f"WARNING: Malformed {resource_type} record skipped.")
-            continue
-        try:
-            obj = parser(record)
-            if obj:
-                cloud_store[resource_type].append(obj)
-        except Exception as exc:
-            errors.append(f"Parse error [{resource_type}]: {exc}")
-
-
-def _parse_vm(record: Dict) -> Dict:
-    """
-    Normalize Azure VM record into standard cloud object.
-
-    Expected fields from ARM export:
-        name, id, location, properties.storageProfile.osDisk.osType,
-        properties.osProfile, properties.networkProfile,
-        properties.diagnosticsProfile, tags
-    """
-    props = ensure_dict(record.get("properties", {}))
-    storage_profile = ensure_dict(props.get("storageProfile", {}))
-    os_disk = ensure_dict(storage_profile.get("osDisk", {}))
-    network_profile = ensure_dict(props.get("networkProfile", {}))
-    diagnostics = ensure_dict(props.get("diagnosticsProfile", {}))
-    boot_diag = ensure_dict(diagnostics.get("bootDiagnostics", {}))
-
-    # Collect network interfaces
-    interfaces = ensure_list(network_profile.get("networkInterfaces", []))
-    has_public_ip = any(
-        ensure_dict(iface).get("publicIpAddress") or
-        ensure_dict(ensure_dict(iface).get("properties", {})).get("publicIPAddress")
-        for iface in interfaces
-    )
-
-    # Encryption at rest
-    managed_disk = ensure_dict(os_disk.get("managedDisk", {}))
-    encryption = ensure_dict(managed_disk.get("diskEncryptionSet", {}))
-    disk_encrypted = bool(encryption.get("id"))
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "os_type": os_disk.get("osType"),
-        "vm_size": safe_get(props, "hardwareProfile", "vmSize"),
-        "public_ip_attached": has_public_ip,
-        "disk_encrypted": disk_encrypted,
-        "boot_diagnostics_enabled": boot_diag.get("enabled", False),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_storage(record: Dict) -> Dict:
-    """
-    Normalize Azure Storage Account record.
-
-    Expected fields from ARM export:
-        name, id, location, kind, properties.publicNetworkAccess,
-        properties.allowBlobPublicAccess, properties.supportsHttpsTrafficOnly,
-        properties.minimumTlsVersion, properties.encryption
-    """
-    props = ensure_dict(record.get("properties", {}))
-    encryption = ensure_dict(props.get("encryption", {}))
-    services = ensure_dict(encryption.get("services", {}))
-    blob_enc = ensure_dict(services.get("blob", {}))
-    file_enc = ensure_dict(services.get("file", {}))
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "kind": record.get("kind"),
-        "public_network_access": props.get("publicNetworkAccess", "Enabled"),
-        "allow_blob_public_access": props.get("allowBlobPublicAccess", True),
-        "https_only": props.get("supportsHttpsTrafficOnly", False),
-        "minimum_tls_version": props.get("minimumTlsVersion", "TLS1_0"),
-        "blob_encryption_enabled": blob_enc.get("enabled", False),
-        "file_encryption_enabled": file_enc.get("enabled", False),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_keyvault(record: Dict) -> Dict:
-    """
-    Normalize Azure Key Vault record.
-
-    Expected fields from ARM export:
-        name, id, location, properties.publicNetworkAccess,
-        properties.enableSoftDelete, properties.softDeleteRetentionInDays,
-        properties.enablePurgeProtection, properties.networkAcls
-    """
-    props = ensure_dict(record.get("properties", {}))
-    network_acls = ensure_dict(props.get("networkAcls", {}))
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "public_network_access": props.get("publicNetworkAccess", "Enabled"),
-        "soft_delete_enabled": props.get("enableSoftDelete", False),
-        "soft_delete_retention_days": props.get("softDeleteRetentionInDays", 0),
-        "purge_protection_enabled": props.get("enablePurgeProtection", False),
-        "network_acl_default_action": network_acls.get("defaultAction", "Allow"),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_nsg(record: Dict) -> Dict:
-    """
-    Normalize Azure NSG record.
-
-    Expected fields from ARM export:
-        name, id, location,
-        properties.securityRules[].properties (direction, access,
-        protocol, sourceAddressPrefix, destinationPortRange)
-    """
-    props = ensure_dict(record.get("properties", {}))
-    raw_rules = ensure_list(props.get("securityRules", []))
-
-    inbound = []
-    outbound = []
-
-    for rule in raw_rules:
-        rule = ensure_dict(rule)
-        rp = ensure_dict(rule.get("properties", {}))
-        normalized_rule = {
-            "name": rule.get("name"),
-            "priority": rp.get("priority"),
-            "direction": rp.get("direction"),
-            "access": rp.get("access"),
-            "protocol": rp.get("protocol"),
-            "source_address": rp.get("sourceAddressPrefix", ""),
-            "destination_address": rp.get("destinationAddressPrefix", ""),
-            "destination_port": str(rp.get("destinationPortRange", "")),
-            "source_port": str(rp.get("sourcePortRange", "")),
-        }
-        if rp.get("direction") == "Inbound":
-            inbound.append(normalized_rule)
-        else:
-            outbound.append(normalized_rule)
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "inbound_rules": inbound,
-        "outbound_rules": outbound,
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_vnet(record: Dict) -> Dict:
-    """
-    Normalize Azure VNet record.
-
-    Expected fields from ARM export:
-        name, id, location,
-        properties.addressSpace.addressPrefixes,
-        properties.subnets[].properties.networkSecurityGroup,
-        properties.enableDdosProtection
-    """
-    props = ensure_dict(record.get("properties", {}))
-    address_space = ensure_dict(props.get("addressSpace", {}))
-    raw_subnets = ensure_list(props.get("subnets", []))
-
-    subnets = []
-    for subnet in raw_subnets:
-        subnet = ensure_dict(subnet)
-        sp = ensure_dict(subnet.get("properties", {}))
-        subnets.append({
-            "name": subnet.get("name"),
-            "address_prefix": sp.get("addressPrefix"),
-            "has_nsg": bool(sp.get("networkSecurityGroup")),
-            "nsg_id": safe_get(sp, "networkSecurityGroup", "id"),
-        })
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "address_prefixes": ensure_list(address_space.get("addressPrefixes", [])),
-        "ddos_protection_enabled": props.get("enableDdosProtection", False),
-        "subnets": subnets,
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_public_ip(record: Dict) -> Dict:
-    """
-    Normalize Azure Public IP record.
-
-    Expected fields from ARM export:
-        name, id, location,
-        properties.publicIPAllocationMethod,
-        properties.ipConfiguration (presence = attached)
-    """
-    props = ensure_dict(record.get("properties", {}))
-    ip_config = props.get("ipConfiguration")
-
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "resource_group": _extract_resource_group(record.get("id", "")),
-        "allocation_method": props.get("publicIPAllocationMethod", "Dynamic"),
-        "ip_address": props.get("ipAddress"),
-        "attached": bool(ip_config),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_resource_group(record: Dict) -> Dict:
-    """
-    Normalize Azure Resource Group record.
-
-    Expected fields from ARM export:
-        name, id, location, tags
-    """
-    return {
-        "name": record.get("name"),
-        "id": record.get("id"),
-        "location": record.get("location"),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-def _parse_subscription(record: Dict) -> Dict:
-    """
-    Normalize Azure Subscription record.
-
-    Expected fields from ARM export:
-        subscriptionId, displayName, state,
-        properties.tenantId,
-        diagnosticSettings (presence = enabled)
-    """
-    props = ensure_dict(record.get("properties", {}))
-    diag_settings = ensure_list(record.get("diagnosticSettings", []))
-
-    return {
-        "name": record.get("displayName"),
-        "id": record.get("subscriptionId"),
-        "state": record.get("state"),
-        "tenant_id": props.get("tenantId"),
-        "diagnostic_settings_present": bool(diag_settings),
-        "diagnostic_settings_count": len(diag_settings),
-        "tags": ensure_dict(record.get("tags", {})),
-        "raw": record,
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Compute (VM)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_vm(vms: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against virtual machines."""
-    findings = []
-
-    for vm in vms:
-        name = vm.get("name", "unknown")
-        resource_group = vm.get("resource_group", "unknown")
-        location = vm.get("location", "unknown")
-
-        # ── CLD-VM-001: Public IP Attached ────────────────────────────────────
-        if vm.get("public_ip_attached"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-VM-001",
-                    "title": "Virtual Machine Has Public IP Attached",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Compute",
-                    "asset": name,
-                    "role": "virtual_machine",
-                    "source": resource_group,
-                    "object_id": vm.get("id"),
-                    "mitre_key": "valid_accounts",
-                    "evidence": {
-                        "vm_name": name,
-                        "location": location,
-                        "public_ip_attached": True,
-                    },
-                    "recommendation": (
-                        "Remove the public IP from this VM. "
-                        "Use Azure Bastion or a jump host for administrative access. "
-                        "Restrict inbound access using NSG rules."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "virtual_machine",
-                "trivial",
-            )
-            findings.append(finding)
-
-        # ── CLD-VM-002: OS Disk Not Encrypted ─────────────────────────────────
-        if not vm.get("disk_encrypted"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-VM-002",
-                    "title": "Virtual Machine OS Disk Encryption Not Configured",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Compute",
-                    "asset": name,
-                    "role": "virtual_machine",
-                    "source": resource_group,
-                    "object_id": vm.get("id"),
-                    "mitre_key": "valid_accounts",
-                    "evidence": {
-                        "vm_name": name,
-                        "disk_encrypted": False,
-                    },
-                    "recommendation": (
-                        "Enable Azure Disk Encryption or server-side encryption "
-                        "with a customer-managed key for the OS disk."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "virtual_machine",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-VM-003: Boot Diagnostics Disabled ─────────────────────────────
-        if not vm.get("boot_diagnostics_enabled"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-VM-003",
-                    "title": "Virtual Machine Boot Diagnostics Disabled",
-                    "severity": "Medium",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Monitoring",
-                    "asset": name,
-                    "role": "virtual_machine",
-                    "source": resource_group,
-                    "object_id": vm.get("id"),
-                    "evidence": {
-                        "vm_name": name,
-                        "boot_diagnostics_enabled": False,
-                    },
-                    "recommendation": (
-                        "Enable boot diagnostics on this VM to capture serial "
-                        "console output and screenshots for incident investigation."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "monitoring",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-VM-004: Missing Tags ───────────────────────────────────────────
-        if not vm.get("tags"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_null",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-VM-004",
-                    "title": "Virtual Machine Has No Tags",
-                    "severity": "Low",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Governance",
-                    "asset": name,
-                    "role": "virtual_machine",
-                    "source": resource_group,
-                    "object_id": vm.get("id"),
-                    "evidence": {
-                        "vm_name": name,
-                        "tags": {},
-                    },
-                    "recommendation": (
-                        "Apply tags to this VM for ownership, environment, "
-                        "and cost tracking."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "resource_group",
-                "contextual",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Storage
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_storage(accounts: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against storage accounts."""
-    findings = []
-
-    for account in accounts:
-        name = account.get("name", "unknown")
-        resource_group = account.get("resource_group", "unknown")
-
-        # ── CLD-STG-001: Anonymous Blob Access Enabled ─────────────────────────
-        if account.get("allow_blob_public_access"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-STG-001",
-                    "title": "Storage Account Allows Anonymous Blob Access",
-                    "severity": "Critical",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Storage",
-                    "asset": name,
-                    "role": "storage_account",
-                    "source": resource_group,
-                    "object_id": account.get("id"),
-                    "mitre_key": "valid_accounts",
-                    "evidence": {
-                        "storage_name": name,
-                        "allow_blob_public_access": True,
-                    },
-                    "recommendation": (
-                        "Disable anonymous blob access on the storage account. "
-                        "Set allowBlobPublicAccess to false. "
-                        "Require authentication for all blob access."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "storage",
-                "trivial",
-            )
-            findings.append(finding)
-
-        # ── CLD-STG-002: HTTPS Not Enforced ───────────────────────────────────
-        if not account.get("https_only"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-STG-002",
-                    "title": "Storage Account Does Not Enforce HTTPS",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Storage",
-                    "asset": name,
-                    "role": "storage_account",
-                    "source": resource_group,
-                    "object_id": account.get("id"),
-                    "evidence": {
-                        "storage_name": name,
-                        "https_only": False,
-                    },
-                    "recommendation": (
-                        "Enable 'Secure transfer required' on the storage account "
-                        "to enforce HTTPS for all requests."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "storage",
-                "moderate",
-            )
-            findings.append(finding)
-
-        # ── CLD-STG-003: Weak TLS Version ─────────────────────────────────────
-        tls = account.get("minimum_tls_version", "TLS1_0")
-        if tls in ("TLS1_0", "TLS1_1"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-STG-003",
-                    "title": "Storage Account Uses Weak TLS Version",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Storage",
-                    "asset": name,
-                    "role": "storage_account",
-                    "source": resource_group,
-                    "object_id": account.get("id"),
-                    "evidence": {
-                        "storage_name": name,
-                        "minimum_tls_version": tls,
-                    },
-                    "recommendation": (
-                        "Set minimumTlsVersion to TLS1_2 on the storage account. "
-                        "Deprecate TLS 1.0 and TLS 1.1 support."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "storage",
-                "moderate",
-            )
-            findings.append(finding)
-
-        # ── CLD-STG-004: Public Network Access Enabled ─────────────────────────
-        if account.get("public_network_access", "Enabled") == "Enabled":
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-STG-004",
-                    "title": "Storage Account Public Network Access Enabled",
-                    "severity": "Medium",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Storage",
-                    "asset": name,
-                    "role": "storage_account",
-                    "source": resource_group,
-                    "object_id": account.get("id"),
-                    "evidence": {
-                        "storage_name": name,
-                        "public_network_access": "Enabled",
-                    },
-                    "recommendation": (
-                        "Restrict public network access. Use private endpoints "
-                        "and network ACLs to limit access to trusted networks."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "storage",
-                "moderate",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Key Vault
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_keyvault(vaults: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against Key Vaults."""
-    findings = []
-
-    for vault in vaults:
-        name = vault.get("name", "unknown")
-        resource_group = vault.get("resource_group", "unknown")
-
-        # ── CLD-KV-001: Public Network Access Enabled ──────────────────────────
-        if vault.get("public_network_access", "Enabled") == "Enabled":
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-KV-001",
-                    "title": "Key Vault Public Network Access Enabled",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Secrets",
-                    "asset": name,
-                    "role": "key_vault",
-                    "source": resource_group,
-                    "object_id": vault.get("id"),
-                    "mitre_key": "steal_token",
-                    "evidence": {
-                        "vault_name": name,
-                        "public_network_access": "Enabled",
-                    },
-                    "recommendation": (
-                        "Disable public network access on Key Vault. "
-                        "Configure private endpoints and restrict access "
-                        "using network ACLs."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "key_vault",
-                "moderate",
-            )
-            findings.append(finding)
-
-        # ── CLD-KV-002: Soft Delete Disabled ──────────────────────────────────
-        if not vault.get("soft_delete_enabled"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-KV-002",
-                    "title": "Key Vault Soft Delete Not Enabled",
-                    "severity": "Medium",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Secrets",
-                    "asset": name,
-                    "role": "key_vault",
-                    "source": resource_group,
-                    "object_id": vault.get("id"),
-                    "evidence": {
-                        "vault_name": name,
-                        "soft_delete_enabled": False,
-                    },
-                    "recommendation": (
-                        "Enable soft delete on Key Vault to protect against "
-                        "accidental or malicious deletion of keys and secrets."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "key_vault",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-KV-003: Purge Protection Disabled ─────────────────────────────
-        if not vault.get("purge_protection_enabled"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-KV-003",
-                    "title": "Key Vault Purge Protection Not Enabled",
-                    "severity": "Medium",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Secrets",
-                    "asset": name,
-                    "role": "key_vault",
-                    "source": resource_group,
-                    "object_id": vault.get("id"),
-                    "evidence": {
-                        "vault_name": name,
-                        "purge_protection_enabled": False,
-                    },
-                    "recommendation": (
-                        "Enable purge protection to prevent permanent deletion "
-                        "of Key Vault objects during the retention period."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "key_vault",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-KV-004: Network ACL Default Action Allow ───────────────────────
-        if vault.get("network_acl_default_action", "Allow") == "Allow":
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-KV-004",
-                    "title": "Key Vault Network ACL Default Action Is Allow",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Secrets",
-                    "asset": name,
-                    "role": "key_vault",
-                    "source": resource_group,
-                    "object_id": vault.get("id"),
-                    "mitre_key": "steal_token",
-                    "evidence": {
-                        "vault_name": name,
-                        "network_acl_default_action": "Allow",
-                    },
-                    "recommendation": (
-                        "Set the Key Vault network ACL default action to Deny. "
-                        "Explicitly allowlist trusted IP ranges and VNet subnets."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "key_vault",
-                "moderate",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Network Security Groups
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# Ports considered dangerous when exposed to the internet.
-_DANGEROUS_PORTS = {
-    "22": "SSH",
-    "3389": "RDP",
-    "23": "Telnet",
-    "21": "FTP",
-    "25": "SMTP",
-    "445": "SMB",
-    "135": "RPC",
-    "5985": "WinRM-HTTP",
-    "5986": "WinRM-HTTPS",
-}
-
-_INTERNET_SOURCES = {"*", "0.0.0.0/0", "Internet", "Any"}
-
-
-def _rules_nsg(nsgs: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against Network Security Groups."""
-    findings = []
-
-    for nsg in nsgs:
-        name = nsg.get("name", "unknown")
-        resource_group = nsg.get("resource_group", "unknown")
-
-        for rule in nsg.get("inbound_rules", []):
-            if rule.get("access") != "Allow":
-                continue
-
-            source = rule.get("source_address", "")
-            port = rule.get("destination_port", "")
-
-            # ── CLD-NSG-001: Dangerous Port Open To Internet ───────────────────
-            if source in _INTERNET_SOURCES:
-                service_name = _DANGEROUS_PORTS.get(port)
-                if service_name or port == "*":
-                    exposed_port = port if port != "*" else "All Ports"
-                    label = service_name if service_name else "All Ports"
-                    conf_label, conf_score, conf_rationale = compute_confidence(
-                        "field_present",
-                    )
-                    finding = normalize_finding(
-                        {
-                            "rule_id": "CLD-NSG-001",
-                            "title": f"NSG Allows {label} Access From Internet",
-                            "severity": "Critical" if port in ("22", "3389", "*") else "High",
-                            "confidence": conf_label,
-                            "confidence_score": conf_score,
-                            "confidence_rationale": conf_rationale,
-                            "category": "Network",
-                            "asset": name,
-                            "role": "network_security_group",
-                            "source": resource_group,
-                            "object_id": nsg.get("id"),
-                            "mitre_key": "valid_accounts",
-                            "evidence": {
-                                "nsg_name": name,
-                                "rule_name": rule.get("name"),
-                                "source_address": source,
-                                "destination_port": exposed_port,
-                                "protocol": rule.get("protocol"),
-                                "service": label,
-                            },
-                            "recommendation": (
-                                f"Remove or restrict the inbound rule allowing "
-                                f"{label} ({exposed_port}) from {source}. "
-                                f"Limit access to known IP ranges only. "
-                                f"Use Azure Bastion for administrative access."
-                            ),
-                        },
-                        TOOL_NAME,
-                    )
-                    finding["risk_score"] = compute_risk_score(
-                        finding["severity"],
-                        finding["confidence"],
-                        "network",
-                        "trivial",
-                    )
-                    findings.append(finding)
-
-            # ── CLD-NSG-002: Any-to-Any Inbound Rule ──────────────────────────
-            if source in _INTERNET_SOURCES and port == "*":
-                conf_label, conf_score, conf_rationale = compute_confidence(
-                    "field_present",
-                )
-                finding = normalize_finding(
-                    {
-                        "rule_id": "CLD-NSG-002",
-                        "title": "NSG Has Any-to-Any Inbound Allow Rule",
-                        "severity": "Critical",
-                        "confidence": conf_label,
-                        "confidence_score": conf_score,
-                        "confidence_rationale": conf_rationale,
-                        "category": "Network",
-                        "asset": name,
-                        "role": "network_security_group",
-                        "source": resource_group,
-                        "object_id": nsg.get("id"),
-                        "mitre_key": "valid_accounts",
-                        "evidence": {
-                            "nsg_name": name,
-                            "rule_name": rule.get("name"),
-                            "source_address": source,
-                            "destination_port": "*",
-                        },
-                        "recommendation": (
-                            "Immediately remove the any-to-any inbound allow rule. "
-                            "Replace with explicit rules for required services only."
-                        ),
-                    },
-                    TOOL_NAME,
-                )
-                finding["risk_score"] = compute_risk_score(
-                    finding["severity"],
-                    finding["confidence"],
-                    "network",
-                    "trivial",
-                )
-                findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Network (VNet)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_network(vnets: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against VNets."""
-    findings = []
-
-    for vnet in vnets:
-        name = vnet.get("name", "unknown")
-        resource_group = vnet.get("resource_group", "unknown")
-
-        # ── CLD-NET-001: DDoS Protection Not Enabled ──────────────────────────
-        if not vnet.get("ddos_protection_enabled"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-NET-001",
-                    "title": "VNet DDoS Protection Not Enabled",
-                    "severity": "Medium",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Network",
-                    "asset": name,
-                    "role": "vnet",
-                    "source": resource_group,
-                    "object_id": vnet.get("id"),
-                    "evidence": {
-                        "vnet_name": name,
-                        "ddos_protection_enabled": False,
-                    },
-                    "recommendation": (
-                        "Enable Azure DDoS Network Protection on this VNet "
-                        "to protect public-facing resources."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "network",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-NET-002: Subnets Without NSG ──────────────────────────────────
-        for subnet in vnet.get("subnets", []):
-            if not subnet.get("has_nsg"):
-                conf_label, conf_score, conf_rationale = compute_confidence(
-                    "field_null",
-                )
-                finding = normalize_finding(
-                    {
-                        "rule_id": "CLD-NET-002",
-                        "title": "Subnet Has No Network Security Group Attached",
-                        "severity": "Medium",
-                        "confidence": conf_label,
-                        "confidence_score": conf_score,
-                        "confidence_rationale": conf_rationale,
-                        "category": "Network",
-                        "asset": subnet.get("name", "unknown"),
-                        "role": "subnet",
-                        "source": resource_group,
-                        "object_id": vnet.get("id"),
-                        "evidence": {
-                            "vnet_name": name,
-                            "subnet_name": subnet.get("name"),
-                            "address_prefix": subnet.get("address_prefix"),
-                            "nsg_attached": False,
-                        },
-                        "recommendation": (
-                            "Attach a Network Security Group to this subnet "
-                            "to enforce traffic filtering rules."
-                        ),
-                    },
-                    TOOL_NAME,
-                )
-                finding["risk_score"] = compute_risk_score(
-                    finding["severity"],
-                    finding["confidence"],
-                    "network",
-                    "moderate",
-                )
-                findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Public IPs
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_public_ip(public_ips: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against Public IP addresses."""
-    findings = []
-
-    for pip in public_ips:
-        name = pip.get("name", "unknown")
-        resource_group = pip.get("resource_group", "unknown")
-
-        # ── CLD-PIP-001: Unattached Public IP ─────────────────────────────────
-        if not pip.get("attached"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_null",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-PIP-001",
-                    "title": "Unattached Public IP Address",
-                    "severity": "Low",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Network",
-                    "asset": name,
-                    "role": "public_ip",
-                    "source": resource_group,
-                    "object_id": pip.get("id"),
-                    "evidence": {
-                        "pip_name": name,
-                        "attached": False,
-                        "ip_address": pip.get("ip_address"),
-                    },
-                    "recommendation": (
-                        "Delete unattached public IP addresses to reduce "
-                        "attack surface and unnecessary cost."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "public_ip",
-                "contextual",
-            )
-            findings.append(finding)
-
-        # ── CLD-PIP-002: Static Public IP Allocation ───────────────────────────
-        if pip.get("allocation_method") == "Static" and pip.get("attached"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_present",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-PIP-002",
-                    "title": "Static Public IP Address In Use",
-                    "severity": "Informational",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Network",
-                    "asset": name,
-                    "role": "public_ip",
-                    "source": resource_group,
-                    "object_id": pip.get("id"),
-                    "evidence": {
-                        "pip_name": name,
-                        "allocation_method": "Static",
-                        "ip_address": pip.get("ip_address"),
-                    },
-                    "recommendation": (
-                        "Verify this static public IP is required. "
-                        "Document ownership and review firewall exposure."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "public_ip",
-                "contextual",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Resource Groups
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_resource_group(resource_groups: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against Resource Groups."""
-    findings = []
-
-    for rg in resource_groups:
-        name = rg.get("name", "unknown")
-
-        # ── CLD-RG-001: Missing Tags ───────────────────────────────────────────
-        if not rg.get("tags"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_null",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-RG-001",
-                    "title": "Resource Group Has No Tags",
-                    "severity": "Low",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Governance",
-                    "asset": name,
-                    "role": "resource_group",
-                    "source": name,
-                    "object_id": rg.get("id"),
-                    "evidence": {
-                        "resource_group": name,
-                        "tags": {},
-                    },
-                    "recommendation": (
-                        "Apply mandatory tags to resource groups: owner, "
-                        "environment, cost-center, and project."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "resource_group",
-                "contextual",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Rule Engine — Subscription
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _rules_subscription(subscriptions: List[Dict]) -> List[Dict]:
-    """Evaluate security rules against Subscriptions."""
-    findings = []
-
-    for sub in subscriptions:
-        name = sub.get("name", "unknown")
-        sub_id = sub.get("id", "unknown")
-
-        # ── CLD-SUB-001: No Diagnostic Settings ───────────────────────────────
-        if not sub.get("diagnostic_settings_present"):
-            conf_label, conf_score, conf_rationale = compute_confidence(
-                "field_null",
-            )
-            finding = normalize_finding(
-                {
-                    "rule_id": "CLD-SUB-001",
-                    "title": "Subscription Has No Diagnostic Settings Configured",
-                    "severity": "High",
-                    "confidence": conf_label,
-                    "confidence_score": conf_score,
-                    "confidence_rationale": conf_rationale,
-                    "category": "Monitoring",
-                    "asset": name,
-                    "role": "subscription",
-                    "source": sub_id,
-                    "object_id": sub_id,
-                    "evidence": {
-                        "subscription_name": name,
-                        "subscription_id": sub_id,
-                        "diagnostic_settings_present": False,
-                    },
-                    "recommendation": (
-                        "Configure subscription-level diagnostic settings to export "
-                        "Activity Logs to a Log Analytics workspace or Storage Account. "
-                        "Retain logs for at least 90 days."
-                    ),
-                },
-                TOOL_NAME,
-            )
-            finding["risk_score"] = compute_risk_score(
-                finding["severity"],
-                finding["confidence"],
-                "subscription",
-                "contextual",
-            )
-            findings.append(finding)
-
-    return findings
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Finding Categorization
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _categorize_findings(findings: List[Dict], details: Dict) -> Dict:
-    """
-    Organize findings into cloud security domain buckets.
-
-    Cloud.py owns this logic. base.py has no category knowledge.
-
-    Domains:
-        compute   — VM findings
-        storage   — Storage account findings
-        network   — NSG, VNet, Public IP findings
-        secrets   — Key Vault findings
-        governance — Tagging, policy findings
-        monitoring — Diagnostics, logging findings
-    """
-    category_map = {
-        "Compute": "compute",
-        "Storage": "storage",
-        "Network": "network",
-        "Secrets": "secrets",
-        "Governance": "governance",
-        "Monitoring": "monitoring",
-    }
-
-    for finding in findings:
-        category = finding.get("category", "")
-        bucket = category_map.get(category)
-        if bucket and bucket in details:
-            details[bucket].append(finding)
-        else:
-            # Default: governance bucket for unknown categories
-            details["governance"].append(finding)
-
-    return details
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Cloud-Specific Summary
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _build_cloud_summary(cloud_store: Dict, findings: List[Dict]) -> Dict:
-    """
-    Build cloud-specific summary fields.
-
-    Passed to build_summary() as extra_summary.
-    Answers: how many VMs, storage accounts, etc. were analyzed.
-    """
-    total_findings = len(findings)
-    high_critical = sum(
-        1 for f in findings
-        if f.get("severity") in ("Critical", "High")
-    )
-
-    # Simple cloud health score: 100 minus penalty per high/critical finding.
-    # Capped at 0. Informational for awareness only.
-    penalty_per_finding = 5
-    health_score = max(0, 100 - (high_critical * penalty_per_finding))
-
-    return {
-        "resource_counts": {
-            "virtual_machines": len(cloud_store["virtual_machines"]),
-            "storage_accounts": len(cloud_store["storage_accounts"]),
-            "key_vaults": len(cloud_store["key_vaults"]),
-            "network_security_groups": len(cloud_store["network_security_groups"]),
-            "vnets": len(cloud_store["vnets"]),
-            "public_ips": len(cloud_store["public_ips"]),
-            "resource_groups": len(cloud_store["resource_groups"]),
-            "subscriptions": len(cloud_store["subscriptions"]),
-        },
-        "high_critical_findings": high_critical,
-        "cloud_health_score": health_score,
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Utilities
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _extract_resource_group(resource_id: str) -> Optional[str]:
-    """
-    Extract resource group name from Azure resource ID.
-
-    Example:
-        /subscriptions/abc/resourceGroups/my-rg/providers/...
-        -> my-rg
-    """
-    if not resource_id:
-        return None
-    parts = resource_id.split("/")
     try:
-        idx = next(
-            i for i, p in enumerate(parts)
-            if p.lower() == "resourcegroups"
+        items = parser(data)
+        return items, []
+    except Exception as exc:
+        return [], [f"Parser error for {resource_type} in {filepath}: {exc}"]
+
+
+def _normalize_list_or_single(data: Any) -> List[Dict]:
+    """Ensure data is a list of dicts."""
+    if isinstance(data, list):
+        return [d for d in data if isinstance(d, dict)]
+    if isinstance(data, dict):
+        return [data]
+    return []
+
+
+def _parse_subscription(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        result.append({
+            "subscription_id": item.get("id") or item.get("subscriptionId"),
+            "display_name": item.get("displayName") or item.get("name"),
+            "state": item.get("state"),
+            "tenant_id": item.get("tenantId"),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_vms(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        os_profile = base_module.ensure_dict(props.get("osProfile", {}))
+        storage_profile = base_module.ensure_dict(props.get("storageProfile", {}))
+        os_disk = base_module.ensure_dict(storage_profile.get("osDisk", {}))
+        network_profile = base_module.ensure_dict(props.get("networkProfile", {}))
+
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "vm_size": base_module.safe_get(props, "hardwareProfile", "vmSize"),
+            "os_type": os_disk.get("osType"),
+            "computer_name": os_profile.get("computerName"),
+            "disable_password_auth": base_module.safe_get(os_profile, "linuxConfiguration", "disablePasswordAuthentication"),
+            "encryption_at_host": base_module.safe_get(props, "securityProfile", "encryptionAtHost"),
+            "secure_boot": base_module.safe_get(props, "securityProfile", "uefiSettings", "secureBootEnabled"),
+            "vtpm": base_module.safe_get(props, "securityProfile", "uefiSettings", "vTpmEnabled"),
+            "os_disk_encryption": os_disk.get("encryptionSettings"),
+            "network_interfaces": [
+                nic.get("id") for nic in base_module.ensure_list(network_profile.get("networkInterfaces"))
+            ],
+            "provisioning_state": props.get("provisioningState"),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_storage_accounts(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "sku": base_module.safe_get(item, "sku", "name"),
+            "kind": item.get("kind"),
+            "https_only": props.get("supportsHttpsTrafficOnly"),
+            "public_access": props.get("allowBlobPublicAccess"),
+            "allow_shared_key": props.get("allowSharedKeyAccess"),
+            "tls_version": props.get("minimumTlsVersion"),
+            "network_acls_default": base_module.safe_get(props, "networkAcls", "defaultAction"),
+            "blob_soft_delete": base_module.safe_get(props, "deleteRetentionPolicy", "enabled"),
+            "versioning": base_module.safe_get(props, "blobServiceProperties", "isVersioningEnabled"),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_keyvaults(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "sku": base_module.safe_get(props, "sku", "name"),
+            "tenant_id": props.get("tenantId"),
+            "soft_delete_enabled": props.get("enableSoftDelete"),
+            "soft_delete_retention": props.get("softDeleteRetentionInDays"),
+            "purge_protection": props.get("enablePurgeProtection"),
+            "public_network_access": props.get("publicNetworkAccess"),
+            "network_acls_default": base_module.safe_get(props, "networkAcls", "defaultAction"),
+            "access_policies": base_module.ensure_list(props.get("accessPolicies")),
+            "rbac_authorization": props.get("enableRbacAuthorization"),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_nsgs(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        security_rules = base_module.ensure_list(props.get("securityRules", []))
+
+        inbound_any = [
+            r for r in security_rules
+            if (
+                base_module.safe_get(r, "properties", "direction") == "Inbound"
+                and base_module.safe_get(r, "properties", "access") == "Allow"
+                and base_module.safe_get(r, "properties", "sourceAddressPrefix") in ("*", "Internet", "Any")
+            )
+        ]
+
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "security_rules": security_rules,
+            "inbound_allow_any_rules": inbound_any,
+            "subnets_count": len(base_module.ensure_list(props.get("subnets"))),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_vnets(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "address_space": base_module.safe_get(props, "addressSpace", "addressPrefixes", default=[]),
+            "subnets": [
+                {
+                    "name": s.get("name"),
+                    "prefix": base_module.safe_get(s, "properties", "addressPrefix"),
+                    "nsg": base_module.safe_get(s, "properties", "networkSecurityGroup", "id"),
+                }
+                for s in base_module.ensure_list(props.get("subnets", []))
+                if isinstance(s, dict)
+            ],
+            "ddos_protection": base_module.safe_get(props, "ddosProtectionPlan"),
+            "raw": item,
+        })
+    return result
+
+
+def _parse_public_ips(data: Any) -> List[Dict]:
+    items = _normalize_list_or_single(data)
+    result = []
+    for item in items:
+        props = base_module.ensure_dict(item.get("properties", {}))
+        result.append({
+            "name": item.get("name"),
+            "resource_group": item.get("resourceGroup") or _rg_from_id(item.get("id", "")),
+            "location": item.get("location"),
+            "ip_address": props.get("ipAddress"),
+            "allocation_method": props.get("publicIPAllocationMethod"),
+            "sku": base_module.safe_get(item, "sku", "name"),
+            "dns_label": base_module.safe_get(props, "dnsSettings", "domainNameLabel"),
+            "associated_with": props.get("ipConfiguration", {}).get("id") if isinstance(props.get("ipConfiguration"), dict) else None,
+            "ddos_protection": base_module.safe_get(props, "ddosSettings", "protectionMode"),
+            "idle_timeout": props.get("idleTimeoutInMinutes"),
+            "raw": item,
+        })
+    return result
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — Security Analysis (Rule Engine)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _analyze_resources(
+    resource_type: str, resources: List[Dict], source: str
+) -> Tuple[List[Dict], List[str]]:
+    """
+    Dispatch to the correct analyzer for the resource type.
+    Returns (findings, errors).
+    """
+    analyzers = {
+        "subscription": _analyze_subscription,
+        "vm":           _analyze_vms,
+        "storage":      _analyze_storage_accounts,
+        "keyvault":     _analyze_keyvaults,
+        "nsg":          _analyze_nsgs,
+        "vnet":         _analyze_vnets,
+        "public_ip":    _analyze_public_ips,
+    }
+    analyzer = analyzers.get(resource_type)
+    if not analyzer:
+        return [], []
+
+    findings: List[Dict] = []
+    errors: List[str] = []
+    for resource in resources:
+        try:
+            new_findings = analyzer(resource, source)
+            findings.extend(new_findings)
+        except Exception as exc:
+            errors.append(f"Analysis error for {resource_type} '{resource.get('name', '?')}': {exc}")
+    return findings, errors
+
+
+def _make_finding(
+    rule_id: str,
+    title: str,
+    severity: str,
+    confidence_signal: str,
+    category: str,
+    mitre_key: str,
+    asset: str,
+    evidence: Dict,
+    recommendation: str,
+    source: str,
+    exposure_key: str = "application",
+    exploitability_key: str = "moderate",
+) -> Dict:
+    """Build and normalize a single finding. Central helper — called by all analyzers."""
+    conf_label, conf_score, conf_rationale = base_module.compute_confidence(confidence_signal)
+    raw = {
+        "rule_id": rule_id,
+        "title": title,
+        "severity": severity,
+        "confidence": conf_label,
+        "confidence_score": conf_score,
+        "confidence_rationale": conf_rationale,
+        "category": category,
+        "mitre_key": mitre_key,
+        "asset": asset,
+        "source": source,
+        "evidence": evidence,
+        "recommendation": recommendation,
+    }
+    finding = base_module.normalize_finding(raw, TOOL_NAME)
+    finding["risk_score"] = base_module.compute_risk_score(
+        severity, conf_label, exposure_key, exploitability_key
+    )
+    return finding
+
+
+def _analyze_subscription(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("display_name") or resource.get("subscription_id", "unknown")
+    state = resource.get("state", "")
+    if state and state.lower() != "enabled":
+        findings.append(_make_finding(
+            rule_id="CLD-SUB-001",
+            title="Subscription Not in Enabled State",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Governance",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"state": state},
+            recommendation="Verify subscription state and investigate why it is not enabled.",
+            source=source,
+            exposure_key="subscription",
+            exploitability_key="contextual",
+        ))
+    return findings
+
+
+def _analyze_vms(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+
+    if resource.get("disable_password_auth") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-VM-001",
+            title="VM Allows Password Authentication",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Configuration",
+            mitre_key="valid_accounts",
+            asset=name,
+            evidence={"disable_password_auth": False},
+            recommendation="Disable password authentication and enforce SSH key-based access.",
+            source=source,
+            exposure_key="vm",
+            exploitability_key="moderate",
+        ))
+
+    if resource.get("encryption_at_host") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-VM-002",
+            title="VM Encryption at Host Disabled",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Data Protection",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"encryption_at_host": False},
+            recommendation="Enable encryption at host to protect VM disk data at rest.",
+            source=source,
+            exposure_key="vm",
+            exploitability_key="contextual",
+        ))
+
+    if resource.get("secure_boot") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-VM-003",
+            title="VM Secure Boot Disabled",
+            severity="Low",
+            confidence_signal="field_present",
+            category="Configuration",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"secure_boot": False},
+            recommendation="Enable Secure Boot to protect against boot-level malware.",
+            source=source,
+            exposure_key="vm",
+            exploitability_key="contextual",
+        ))
+
+    if not resource.get("os_disk_encryption"):
+        findings.append(_make_finding(
+            rule_id="CLD-VM-004",
+            title="VM OS Disk Encryption Not Configured",
+            severity="High",
+            confidence_signal="field_null",
+            category="Data Protection",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"os_disk_encryption": None},
+            recommendation="Configure Azure Disk Encryption on OS disk to protect data at rest.",
+            source=source,
+            exposure_key="vm",
+            exploitability_key="moderate",
+        ))
+
+    return findings
+
+
+def _analyze_storage_accounts(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+
+    if resource.get("https_only") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-STG-001",
+            title="Storage Account Allows HTTP Traffic",
+            severity="High",
+            confidence_signal="field_present",
+            category="Data in Transit",
+            mitre_key="traffic_intercept",
+            asset=name,
+            evidence={"supportsHttpsTrafficOnly": False},
+            recommendation="Enable 'Secure transfer required' to enforce HTTPS-only access.",
+            source=source,
+            exposure_key="storage",
+            exploitability_key="moderate",
+        ))
+
+    if resource.get("public_access") is True:
+        findings.append(_make_finding(
+            rule_id="CLD-STG-002",
+            title="Storage Account Allows Public Blob Access",
+            severity="High",
+            confidence_signal="field_present",
+            category="Data Exposure",
+            mitre_key="data_exposed",
+            asset=name,
+            evidence={"allowBlobPublicAccess": True},
+            recommendation="Disable public blob access unless explicitly required for public static hosting.",
+            source=source,
+            exposure_key="storage",
+            exploitability_key="trivial",
+        ))
+
+    if resource.get("allow_shared_key") is not False:
+        findings.append(_make_finding(
+            rule_id="CLD-STG-003",
+            title="Storage Account Allows Shared Key Authorization",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Access Control",
+            mitre_key="valid_accounts",
+            asset=name,
+            evidence={"allowSharedKeyAccess": resource.get("allow_shared_key")},
+            recommendation="Disable shared key access and enforce Azure AD-based authorization.",
+            source=source,
+            exposure_key="storage",
+            exploitability_key="moderate",
+        ))
+
+    tls = resource.get("tls_version", "")
+    if tls and tls != "TLS1_2":
+        findings.append(_make_finding(
+            rule_id="CLD-STG-004",
+            title="Storage Account Minimum TLS Below 1.2",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Data in Transit",
+            mitre_key="traffic_intercept",
+            asset=name,
+            evidence={"minimumTlsVersion": tls},
+            recommendation="Set minimum TLS version to TLS 1.2 to prevent downgrade attacks.",
+            source=source,
+            exposure_key="storage",
+            exploitability_key="moderate",
+        ))
+
+    acl_default = resource.get("network_acls_default", "")
+    if acl_default and acl_default.lower() == "allow":
+        findings.append(_make_finding(
+            rule_id="CLD-STG-005",
+            title="Storage Account Network ACL Default Action is Allow",
+            severity="High",
+            confidence_signal="field_present",
+            category="Network Exposure",
+            mitre_key="data_exposed",
+            asset=name,
+            evidence={"networkAcls.defaultAction": acl_default},
+            recommendation="Set the network ACL default action to Deny and explicitly allow required networks.",
+            source=source,
+            exposure_key="storage",
+            exploitability_key="trivial",
+        ))
+
+    return findings
+
+
+def _analyze_keyvaults(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+
+    if resource.get("soft_delete_enabled") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-KV-001",
+            title="Key Vault Soft Delete Disabled",
+            severity="High",
+            confidence_signal="field_present",
+            category="Data Protection",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"enableSoftDelete": False},
+            recommendation="Enable soft delete to prevent accidental or malicious permanent deletion of secrets.",
+            source=source,
+            exposure_key="keyvault",
+            exploitability_key="moderate",
+        ))
+
+    if resource.get("purge_protection") is not True:
+        findings.append(_make_finding(
+            rule_id="CLD-KV-002",
+            title="Key Vault Purge Protection Disabled",
+            severity="High",
+            confidence_signal="field_present",
+            category="Data Protection",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"enablePurgeProtection": resource.get("purge_protection")},
+            recommendation="Enable purge protection to prevent permanent loss of secrets during the retention window.",
+            source=source,
+            exposure_key="keyvault",
+            exploitability_key="moderate",
+        ))
+
+    pna = resource.get("public_network_access", "")
+    if isinstance(pna, str) and pna.lower() == "enabled":
+        findings.append(_make_finding(
+            rule_id="CLD-KV-003",
+            title="Key Vault Public Network Access Enabled",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Network Exposure",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"publicNetworkAccess": pna},
+            recommendation="Disable public network access and use private endpoints for Key Vault connectivity.",
+            source=source,
+            exposure_key="keyvault",
+            exploitability_key="moderate",
+        ))
+
+    acl_default = resource.get("network_acls_default", "")
+    if acl_default and acl_default.lower() == "allow":
+        findings.append(_make_finding(
+            rule_id="CLD-KV-004",
+            title="Key Vault Network ACL Default Action is Allow",
+            severity="High",
+            confidence_signal="field_present",
+            category="Network Exposure",
+            mitre_key="unsecured_creds",
+            asset=name,
+            evidence={"networkAcls.defaultAction": acl_default},
+            recommendation="Set network ACL default action to Deny and allowlist required networks/IPs.",
+            source=source,
+            exposure_key="keyvault",
+            exploitability_key="trivial",
+        ))
+
+    if resource.get("rbac_authorization") is False:
+        findings.append(_make_finding(
+            rule_id="CLD-KV-005",
+            title="Key Vault Not Using RBAC Authorization",
+            severity="Medium",
+            confidence_signal="field_present",
+            category="Access Control",
+            mitre_key="privilege_escalation",
+            asset=name,
+            evidence={"enableRbacAuthorization": False},
+            recommendation="Enable RBAC authorization for granular access control over Key Vault operations.",
+            source=source,
+            exposure_key="keyvault",
+            exploitability_key="contextual",
+        ))
+
+    return findings
+
+
+def _analyze_nsgs(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+    inbound_any = resource.get("inbound_allow_any_rules", [])
+
+    for rule in inbound_any:
+        rule_props = base_module.ensure_dict(rule.get("properties", {}))
+        dest_port = rule_props.get("destinationPortRange", "*")
+        protocol = rule_props.get("protocol", "*")
+        rule_name = rule.get("name", "unknown_rule")
+
+        severity = "Critical" if dest_port in ("*", "Any", "0-65535") else "High"
+
+        findings.append(_make_finding(
+            rule_id="CLD-NSG-001",
+            title=f"NSG Allows Unrestricted Inbound Traffic — Rule: {rule_name}",
+            severity=severity,
+            confidence_signal="field_present",
+            category="Network Exposure",
+            mitre_key="network_recon",
+            asset=name,
+            evidence={
+                "rule_name": rule_name,
+                "destination_port": dest_port,
+                "protocol": protocol,
+                "source_prefix": rule_props.get("sourceAddressPrefix"),
+            },
+            recommendation=(
+                "Restrict inbound rules to specific source IPs, port ranges, and protocols. "
+                "Remove or scope overly permissive 'Allow Any' rules."
+            ),
+            source=source,
+            exposure_key="nsg",
+            exploitability_key="trivial",
+        ))
+
+    return findings
+
+
+def _analyze_vnets(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+
+    subnets_without_nsg = [
+        s["name"] for s in resource.get("subnets", [])
+        if isinstance(s, dict) and not s.get("nsg")
+    ]
+    if subnets_without_nsg:
+        findings.append(_make_finding(
+            rule_id="CLD-VNET-001",
+            title="VNet Subnets Without Network Security Groups",
+            severity="Medium",
+            confidence_signal="field_null",
+            category="Network Exposure",
+            mitre_key="network_recon",
+            asset=name,
+            evidence={"subnets_without_nsg": subnets_without_nsg, "count": len(subnets_without_nsg)},
+            recommendation="Attach an NSG to every subnet to enforce network traffic controls.",
+            source=source,
+            exposure_key="nsg",
+            exploitability_key="contextual",
+        ))
+
+    if not resource.get("ddos_protection"):
+        findings.append(_make_finding(
+            rule_id="CLD-VNET-002",
+            title="VNet DDoS Protection Not Configured",
+            severity="Low",
+            confidence_signal="field_null",
+            category="Availability",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"ddos_protection": None},
+            recommendation="Enable Azure DDoS Protection Standard for critical virtual networks.",
+            source=source,
+            exposure_key="nsg",
+            exploitability_key="contextual",
+        ))
+
+    return findings
+
+
+def _analyze_public_ips(resource: Dict, source: str) -> List[Dict]:
+    findings = []
+    name = resource.get("name", "unknown")
+    ip = resource.get("ip_address")
+
+    if ip and not resource.get("associated_with"):
+        findings.append(_make_finding(
+            rule_id="CLD-PIP-001",
+            title="Unassociated Public IP Address",
+            severity="Low",
+            confidence_signal="field_null",
+            category="Governance",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"ip_address": ip, "associated_with": None},
+            recommendation="Remove unused public IP addresses to reduce attack surface and unnecessary cost.",
+            source=source,
+            exposure_key="public_ip",
+            exploitability_key="contextual",
+        ))
+
+    if resource.get("allocation_method", "").lower() == "dynamic":
+        findings.append(_make_finding(
+            rule_id="CLD-PIP-002",
+            title="Public IP Using Dynamic Allocation",
+            severity="Low",
+            confidence_signal="field_present",
+            category="Configuration",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"allocation_method": "Dynamic"},
+            recommendation=(
+                "Consider switching to Static allocation for services that require a consistent IP address."
+            ),
+            source=source,
+            exposure_key="public_ip",
+            exploitability_key="contextual",
+        ))
+
+    if not resource.get("ddos_protection"):
+        findings.append(_make_finding(
+            rule_id="CLD-PIP-003",
+            title="Public IP Without DDoS Protection",
+            severity="Low",
+            confidence_signal="field_null",
+            category="Availability",
+            mitre_key="cloud_infra",
+            asset=name,
+            evidence={"ddos_protection": None},
+            recommendation="Enable DDoS protection for public IP addresses attached to critical resources.",
+            source=source,
+            exposure_key="public_ip",
+            exploitability_key="contextual",
+        ))
+
+    return findings
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — CLI Helpers (Mode 2)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _validate_cli() -> Tuple[bool, Optional[str]]:
+    """Check that az CLI is installed and reachable."""
+    if shutil.which("az") is None:
+        return False, "Azure CLI (az) is not installed or not found in PATH."
+    return True, None
+
+
+def _validate_authentication_cli() -> Tuple[bool, Optional[str]]:
+    """Run `az account show` to confirm an active login session."""
+    try:
+        result = subprocess.run(
+            ["az", "account", "show"],
+            capture_output=True, text=True, timeout=AUTH_TIMEOUT
         )
-        return parts[idx + 1]
-    except (StopIteration, IndexError):
+        if result.returncode != 0:
+            return False, f"Azure CLI not authenticated. Run 'az login'. Detail: {result.stderr.strip()}"
+        return True, None
+    except subprocess.TimeoutExpired:
+        return False, "Azure CLI authentication check timed out."
+    except Exception as exc:
+        return False, f"Unexpected error checking Azure CLI authentication: {exc}"
+
+
+def _execute_cli_command(cmd: List[str], output_path: str) -> Tuple[bool, Optional[str]]:
+    """Run az CLI command and write JSON output to output_path."""
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=CLI_TIMEOUT)
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+        if not result.stdout.strip():
+            return False, "Command returned empty output."
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(result.stdout)
+        return True, None
+    except subprocess.TimeoutExpired:
+        return False, f"Command timed out: {' '.join(cmd)}"
+    except Exception as exc:
+        return False, f"Error executing CLI command: {exc}"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — REST API Helpers (Mode 3)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _acquire_access_token() -> Tuple[Optional[str], Optional[str]]:
+    """
+    Acquire an Azure management API access token via az CLI.
+    Reuses existing CLI authentication — no re-implementation.
+    """
+    if shutil.which("az") is None:
+        return None, "Azure CLI (az) not installed. Required for token acquisition."
+    try:
+        result = subprocess.run(
+            ["az", "account", "get-access-token",
+             "--resource", "https://management.azure.com",
+             "--output", "json"],
+            capture_output=True, text=True, timeout=AUTH_TIMEOUT
+        )
+        if result.returncode != 0:
+            return None, f"Token acquisition failed. Run 'az login'. Detail: {result.stderr.strip()}"
+        token_data = json.loads(result.stdout)
+        token = token_data.get("accessToken")
+        if not token:
+            return None, "Access token missing from az CLI response."
+        return token, None
+    except subprocess.TimeoutExpired:
+        return None, "Token acquisition timed out."
+    except json.JSONDecodeError:
+        return None, "Failed to parse token response from az CLI."
+    except Exception as exc:
+        return None, f"Unexpected error acquiring token: {exc}"
+
+
+def _get_subscription_id() -> Tuple[Optional[str], Optional[str]]:
+    """Resolve subscription ID from active az CLI session."""
+    try:
+        result = subprocess.run(
+            ["az", "account", "show", "--output", "json"],
+            capture_output=True, text=True, timeout=AUTH_TIMEOUT
+        )
+        if result.returncode != 0:
+            return None, f"Could not retrieve subscription ID: {result.stderr.strip()}"
+        data = json.loads(result.stdout)
+        sub_id = data.get("id")
+        if not sub_id:
+            return None, "Subscription ID not found in az account show output."
+        return sub_id, None
+    except Exception as exc:
+        return None, f"Error resolving subscription ID: {exc}"
+
+
+def _execute_rest_request(url: str, token: str) -> Tuple[Optional[Any], Optional[str]]:
+    """
+    Make a GET request to the Azure REST API.
+    Returns (response_data, error).
+    """
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=REST_TIMEOUT) as response:
+            raw = response.read().decode("utf-8")
+        data = json.loads(raw)
+        # Azure list APIs wrap results in a "value" key
+        return data.get("value", data), None
+    except urllib.error.HTTPError as exc:
+        return None, f"HTTP {exc.code} from Azure REST API: {exc.reason}"
+    except urllib.error.URLError as exc:
+        return None, f"Network error calling Azure REST API: {exc.reason}"
+    except json.JSONDecodeError as exc:
+        return None, f"Failed to parse Azure REST API response: {exc}"
+    except Exception as exc:
+        return None, f"Unexpected error calling Azure REST API: {exc}"
+
+
+def _download_json(url: str, token: str, output_path: str) -> Tuple[bool, Optional[str]]:
+    """Execute REST request and write JSON to output_path."""
+    data, error = _execute_rest_request(url, token)
+    if error:
+        return False, error
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        return True, None
+    except Exception as exc:
+        return False, f"Failed to write JSON to {output_path}: {exc}"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERNAL — Shared Utilities
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _ensure_output_directory(directory: str) -> Tuple[bool, Optional[str]]:
+    """Create directory if it doesn't exist."""
+    try:
+        os.makedirs(directory, exist_ok=True)
+        return True, None
+    except Exception as exc:
+        return False, f"Could not create output directory '{directory}': {exc}"
+
+
+def _rg_from_id(resource_id: str) -> Optional[str]:
+    """Extract resource group name from an Azure resource ID."""
+    parts = resource_id.lower().split("/")
+    try:
+        idx = parts.index("resourcegroups")
+        return resource_id.split("/")[idx + 1]
+    except (ValueError, IndexError):
         return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Example Usage
-# ═══════════════════════════════════════════════════════════════════════════════
+def _early_failure(
+    errors: List[str], new_error: str, input_path: str, profile: str
+) -> Dict:
+    """Build a failed THRAGG contract for when collection cannot begin."""
+    errors.append(new_error)
+    metadata = base_module.build_metadata(MODULE_NAME, MODULE_VERSION, TOOL_NAME, input_path)
+    metadata["status"] = "failed"
+    return {
+        "metadata": metadata,
+        "summary": {"total_findings": 0},
+        "details": {},
+        "artifacts": {"input_path": input_path},
+        "errors": errors,
+    }
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CLI Entry Point
+# ═════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    import json
+    import sys
 
-    result = run("cloud_exports/")
+    usage = (
+        "Usage:\n"
+        "  python cloud.py run <input_path> [profile]\n"
+        "  python cloud.py cli <output_dir> [profile]\n"
+        "  python cloud.py api <output_dir> [profile] [subscription_id]\n"
+    )
+
+    if len(sys.argv) < 3:
+        print(usage)
+        sys.exit(1)
+
+    mode = sys.argv[1].lower()
+    arg2 = sys.argv[2]
+    profile_arg = sys.argv[3] if len(sys.argv) > 3 else "all"
+
+    if mode == "run":
+        result = run(arg2, profile=profile_arg)
+    elif mode == "cli":
+        result = run_cli(output_dir=arg2, profile=profile_arg)
+    elif mode == "api":
+        sub_id = sys.argv[4] if len(sys.argv) > 4 else None
+        result = run_api(output_dir=arg2, profile=profile_arg, subscription_id=sub_id)
+    else:
+        print(f"Unknown mode: {mode}\n{usage}")
+        sys.exit(1)
+
     print(json.dumps(result, indent=2, default=str))
