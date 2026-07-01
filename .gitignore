@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated reports
+thragg_results/
+report_pretty.json
+
+# Temporary testing
+mixed_test/
+
+# Test evidence (generated)
+test_evidence/
+
+# OS
+.DS_Store
+Thumbs.db
