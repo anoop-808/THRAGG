@@ -32,6 +32,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+__path__ = [os.path.dirname(__file__)]
+
 
 # ---------------------------------------------------------------------------
 # Dispatch table
