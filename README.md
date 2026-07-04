@@ -86,16 +86,14 @@ THRAGG only:
 ```
 THRAGG/
 │
-├── orchestrator.py
+├── thragg.py
 ├── modules/
 │
-├── reports/
+├── core/
 │
-├── evidence/
+├── static_findings/
 │
-├── config/
-│
-├── utils/
+├── data/
 │
 ├── README.md
 │
@@ -233,7 +231,7 @@ v1.0.0
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/THRAGG.git
+git clone https://github.com/anoop-808/THRAGG.git
 ```
 
 Move into the project directory:
@@ -248,10 +246,10 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run THRAGG:
+Run THRAGG against the included sample evidence:
 
 ```bash
-python orchestrator.py
+python thragg.py static_findings
 ```
 
 ---

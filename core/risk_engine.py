@@ -1,0 +1,41 @@
+"""
+core.risk_engine
+================
+
+Milestone 7 orchestration for risk scoring.
+"""
+
+from __future__ import annotations
+
+from .attack_chain import AttackChain
+from .priority_ranker import PriorityRanker
+from .risk_assessment import RiskAssessment
+from .risk_builder import RiskBuilder
+from .risk_repository import RiskRepository
+from .scoring_policy import ScoringPolicy
+
+__all__ = ["RiskEngine"]
+
+
+class RiskEngine:
+    """Build, store, and rank risk assessments."""
+
+    def __init__(
+        self,
+        builder: RiskBuilder | None = None,
+        repository: RiskRepository | None = None,
+        ranker: PriorityRanker | None = None,
+    ) -> None:
+        self.builder = builder or RiskBuilder()
+        self.repository = repository or RiskRepository()
+        self.ranker = ranker or PriorityRanker()
+
+    def run(
+        self,
+        chains: tuple[AttackChain, ...],
+        policy: ScoringPolicy,
+    ) -> tuple[RiskAssessment, ...]:
+        """Return ranked assessments for the supplied chains."""
+        for chain in sorted(chains, key=lambda item: item.id):
+            self.repository.add(self.builder.build(chain, policy))
+        return self.ranker.rank(self.repository.all())

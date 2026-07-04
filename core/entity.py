@@ -9,11 +9,11 @@ A Finding is an event. An Entity is a thing.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
 from .finding import Confidence, EntityType
+from .stable_id import stable_sha_id
 
 __all__ = ["Entity", "stable_entity_id"]
 
@@ -29,9 +29,11 @@ def stable_entity_id(entity_type: EntityType, primary_identifier: str) -> str:
     Same (type, identifier) across runs -> same id, independent of
     execution order.
     """
-    raw = f"{entity_type.value}|{primary_identifier}"
-    digest = hashlib.sha256(raw.encode()).hexdigest()[:16]
-    return f"{entity_type.value.lower()}-{digest}"
+    return stable_sha_id(
+        entity_type.value.lower(),
+        entity_type.value,
+        primary_identifier,
+    )
 
 
 @dataclass

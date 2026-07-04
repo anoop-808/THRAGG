@@ -164,6 +164,14 @@ def test_validate_resolved_entity_rejects_alias_equal_to_primary_identifier():
         validate_resolved_entity(resolved)
 
 
+def test_validate_resolved_entity_rejects_non_resolution_record_items():
+    resolved = _resolved(resolution_records=["not-a-record"])
+
+    assert is_valid_resolved_entity(resolved) is False
+    with pytest.raises(ResolutionValidationError, match="resolution_records"):
+        validate_resolved_entity(resolved)
+
+
 def test_exact_identifier_matching_merges_and_records_method():
     entities = [
         _entity(id="ent-1", source_finding="finding-1"),

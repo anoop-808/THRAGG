@@ -1,17 +1,28 @@
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
+venv/
+.venv/
 
 # Generated reports
 thragg_results/
+thragg_report_*.json
 report_pretty.json
+report.json
+report.md
+report.html
+manifest.json
 
-# Temporary testing
+# Generated evidence and temporary artifacts
+collected_logs/
 mixed_test/
-
-# Test evidence (generated)
 test_evidence/
+evidence/
+reports/
+temp_evidence/
+tmp_evidence/
 
 # OS
 .DS_Store

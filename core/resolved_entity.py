@@ -6,12 +6,12 @@ Shared ResolvedEntity model for THRAGG identity resolution.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
 from .finding import EntityType
+from .stable_id import stable_sha_id
 
 __all__ = [
     "ResolutionConfidence",
@@ -45,9 +45,11 @@ def stable_resolved_entity_id(
     entity_type: EntityType, primary_identifier: str
 ) -> str:
     """Return a deterministic resolved identity id."""
-    raw = f"{entity_type.value}|{primary_identifier}"
-    digest = hashlib.sha256(raw.encode()).hexdigest()[:16]
-    return f"resolved-{entity_type.value.lower()}-{digest}"
+    return stable_sha_id(
+        f"resolved-{entity_type.value.lower()}",
+        entity_type.value,
+        primary_identifier,
+    )
 
 
 @dataclass

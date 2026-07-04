@@ -1,0 +1,16 @@
+{
+  "environmentName": "AzureCloud",
+  "homeTenantId": "5ee9f0f3-4862-4083-b722-627faadbdabc",
+  "id": "9d8f24ae-9ec0-4f43-92f6-544a61aa7201",
+  "isDefault": true,
+  "managedByTenants": [],
+  "name": "Azure for Students",
+  "state": "Enabled",
+  "tenantDefaultDomain": "girianoop808gmail.onmicrosoft.com",
+  "tenantDisplayName": "Default Directory",
+  "tenantId": "5ee9f0f3-4862-4083-b722-627faadbdabc",
+  "user": {
+    "name": "girianoop808@gmail.com",
+    "type": "user"
+  }
+}

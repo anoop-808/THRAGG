@@ -42,12 +42,12 @@ the auto-generation is skipped when ``id`` is provided.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 from typing import Any
 
 from .finding import Confidence, EntityType, Finding, Severity
 from .finding_schema import FindingValidationError, validate_finding
+from .stable_id import stable_sha_id
 
 logger = logging.getLogger("thragg.finding_builder")
 
@@ -161,9 +161,7 @@ def _generate_id(source_module: str, source_rule: str, asset: str | None) -> str
         e.g. ``"nmap-3f1a9c2d84b67e01"``.
     """
     asset_part = asset if asset else "no-asset"
-    raw        = f"{source_module}|{source_rule}|{asset_part}"
-    digest     = hashlib.sha256(raw.encode()).hexdigest()[:16]
-    return f"{source_module}-{digest}"
+    return stable_sha_id(source_module, source_module, source_rule, asset_part)
 
 
 # ---------------------------------------------------------------------------

@@ -21,6 +21,10 @@ class ResolutionValidationError(ValueError):
 
 def validate_resolution_record(record: ResolutionRecord) -> None:
     """Validate a ResolutionRecord instance."""
+    if not isinstance(record, ResolutionRecord):
+        raise ResolutionValidationError(
+            "ResolutionRecord must be a ResolutionRecord instance"
+        )
     if not isinstance(record.resolution_method, ResolutionMethod):
         raise ResolutionValidationError(
             "ResolutionRecord.resolution_method must be a ResolutionMethod enum"
@@ -81,6 +85,11 @@ def validate_resolved_entity(resolved_entity: ResolvedEntity) -> None:
             "ResolvedEntity.attributes keys must be strings"
         )
     for record in resolved_entity.resolution_records:
+        if not isinstance(record, ResolutionRecord):
+            raise ResolutionValidationError(
+                "ResolvedEntity.resolution_records must contain ResolutionRecord "
+                "instances"
+            )
         validate_resolution_record(record)
 
 
