@@ -1,21 +1,21 @@
 import json
 
 from report_builder import ReportBuilder
-from thragg.core.attack_chain import AttackChain
-from thragg.core.chain_edge import ChainEdge
-from thragg.core.correlation import Correlation
-from thragg.core.dashboard_bundle import DashboardBundle
-from thragg.core.evidence_package import EvidencePackage, EvidencePackageManifest
-from thragg.core.executive_assessment import ExecutiveAssessment
-from thragg.core.finding import Confidence, Severity
-from thragg.core.framework_snapshot import FrameworkSnapshot
-from thragg.core.framework_statistics import CountMetric, FrameworkStatistics
-from thragg.core.observation import Observation, ObservationCategory
-from thragg.core.risk_assessment import RiskAssessment
-from thragg.core.risk_contribution import RiskContribution
-from thragg.core.risk_level import RiskLevel
-from thragg.core.security_posture import SecurityPosture
-from thragg.core.traceability_map import TraceabilityMap
+from thragg.core.attack_chain.attack_chain import AttackChain
+from thragg.core.attack_chain.chain_edge import ChainEdge
+from thragg.core.correlation.correlation import Correlation
+from thragg.core.dashboard.dashboard_bundle import DashboardBundle
+from thragg.core.reporting.evidence_package import EvidencePackage, EvidencePackageManifest
+from thragg.core.executive.executive_assessment import ExecutiveAssessment
+from thragg.core.foundation.finding import Confidence, Severity
+from thragg.core.executive.framework_snapshot import FrameworkSnapshot
+from thragg.core.executive.framework_statistics import CountMetric, FrameworkStatistics
+from thragg.core.executive.observation import Observation, ObservationCategory
+from thragg.core.risk.risk_assessment import RiskAssessment
+from thragg.core.risk.risk_contribution import RiskContribution
+from thragg.core.risk.risk_level import RiskLevel
+from thragg.core.executive.security_posture import SecurityPosture
+from thragg.core.shared.traceability_map import TraceabilityMap
 
 
 GENERATED_AT = "2026-07-04T00:00:00Z"

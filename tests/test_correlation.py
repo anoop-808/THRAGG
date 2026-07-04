@@ -1,14 +1,14 @@
-from thragg.core.correlation import Correlation
-from thragg.core.correlation_engine import CorrelationEngine
-from thragg.core.correlation_repository import CorrelationRepository
-from thragg.core.correlation_rule import CorrelationRule, RelationshipPattern, RuleRegistry
-from thragg.core.correlation_schema import is_valid_correlation
-from thragg.core.correlation_builder import CorrelationBuilder
-from thragg.core.pattern_evaluator import PatternEvaluator
-from thragg.core.core_relationship_fact import RelationshipFact, RelationshipType
-from thragg.core.finding import Confidence, EntityType, Severity
-from thragg.core.knowledge_base import KnowledgeBase
-from thragg.core.resolved_entity import ResolvedEntity
+from thragg.core.correlation.correlation import Correlation
+from thragg.core.correlation.correlation_engine import CorrelationEngine
+from thragg.core.correlation.correlation_repository import CorrelationRepository
+from thragg.core.correlation.correlation_rule import CorrelationRule, RelationshipPattern, RuleRegistry
+from thragg.core.correlation.correlation_schema import is_valid_correlation
+from thragg.core.correlation.correlation_builder import CorrelationBuilder
+from thragg.core.correlation.pattern_evaluator import PatternEvaluator
+from thragg.core.foundation.core_relationship_fact import RelationshipFact, RelationshipType
+from thragg.core.foundation.finding import Confidence, EntityType, Severity
+from thragg.core.foundation.knowledge_base import KnowledgeBase
+from thragg.core.foundation.resolved_entity import ResolvedEntity
 
 
 def _relationship(**overrides) -> RelationshipFact:
@@ -170,7 +170,7 @@ def test_type_aware_binding_rejects_inconsistent_entity_index():
 
 
 def test_condition_evaluation_rejects_failed_bindings():
-    from thragg.core.correlation_rule import EntityAttributeEqualsCondition
+    from thragg.core.correlation.correlation_rule import EntityAttributeEqualsCondition
 
     kb = KnowledgeBase()
     kb.add_relationship(_relationship())

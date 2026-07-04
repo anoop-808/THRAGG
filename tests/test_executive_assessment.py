@@ -2,14 +2,14 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from thragg.core.attack_chain import AttackChain
-from thragg.core.chain_edge import ChainEdge
-from thragg.core.correlation import Correlation
-from thragg.core.executive_assessment import (
+from thragg.core.attack_chain.attack_chain import AttackChain
+from thragg.core.attack_chain.chain_edge import ChainEdge
+from thragg.core.correlation.correlation import Correlation
+from thragg.core.executive.executive_assessment import (
     ExecutiveAssessment,
     stable_executive_assessment_id,
 )
-from thragg.core.executive_schema import (
+from thragg.core.executive.executive_schema import (
     ExecutiveSchemaError,
     is_valid_count_metric,
     is_valid_executive_assessment,
@@ -23,15 +23,15 @@ from thragg.core.executive_schema import (
     validate_observation,
     validate_traceability_map,
 )
-from thragg.core.finding import Confidence, Severity
-from thragg.core.framework_snapshot import FrameworkSnapshot
-from thragg.core.framework_statistics import CountMetric, FrameworkStatistics
-from thragg.core.observation import Observation, ObservationCategory
-from thragg.core.risk_assessment import RiskAssessment
-from thragg.core.risk_contribution import RiskContribution
-from thragg.core.risk_level import RiskLevel
-from thragg.core.security_posture import SecurityPosture
-from thragg.core.traceability_map import TraceabilityMap
+from thragg.core.foundation.finding import Confidence, Severity
+from thragg.core.executive.framework_snapshot import FrameworkSnapshot
+from thragg.core.executive.framework_statistics import CountMetric, FrameworkStatistics
+from thragg.core.executive.observation import Observation, ObservationCategory
+from thragg.core.risk.risk_assessment import RiskAssessment
+from thragg.core.risk.risk_contribution import RiskContribution
+from thragg.core.risk.risk_level import RiskLevel
+from thragg.core.executive.security_posture import SecurityPosture
+from thragg.core.shared.traceability_map import TraceabilityMap
 
 
 def _correlation(**overrides) -> Correlation:

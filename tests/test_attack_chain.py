@@ -1,15 +1,15 @@
-from thragg.core.attack_chain_builder import AttackChainBuilder
-from thragg.core.attack_chain_engine import AttackChainEngine
-from thragg.core.attack_chain_repository import AttackChainRepository
-from thragg.core.attack_chain_schema import is_valid_attack_chain
-from thragg.core.chain_candidate import ChainCandidate
-from thragg.core.chain_discovery_engine import ChainDiscoveryEngine
-from thragg.core.chain_edge import AFFINITY_WEIGHTS, ChainEdge, affinity_score
-from thragg.core.chain_validator import ChainValidator
-from thragg.core.correlation import Correlation
-from thragg.core.correlation_repository import CorrelationRepository
-from thragg.core.correlation_rule import AttackStage, RuleRegistry
-from thragg.core.finding import Confidence, EntityType, Severity
+from thragg.core.attack_chain.attack_chain_builder import AttackChainBuilder
+from thragg.core.attack_chain.attack_chain_engine import AttackChainEngine
+from thragg.core.attack_chain.attack_chain_repository import AttackChainRepository
+from thragg.core.attack_chain.attack_chain_schema import is_valid_attack_chain
+from thragg.core.attack_chain.chain_candidate import ChainCandidate
+from thragg.core.attack_chain.chain_discovery_engine import ChainDiscoveryEngine
+from thragg.core.attack_chain.chain_edge import AFFINITY_WEIGHTS, ChainEdge, affinity_score
+from thragg.core.attack_chain.chain_validator import ChainValidator
+from thragg.core.correlation.correlation import Correlation
+from thragg.core.correlation.correlation_repository import CorrelationRepository
+from thragg.core.correlation.correlation_rule import AttackStage, RuleRegistry
+from thragg.core.foundation.finding import Confidence, EntityType, Severity
 
 
 def _correlation(

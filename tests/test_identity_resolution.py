@@ -13,9 +13,9 @@ from thragg.core import (
     validate_resolution_record,
     validate_resolved_entity,
 )
-from thragg.core.entity import Entity
-from thragg.core.entity_schema import EntityValidationError
-from thragg.core.finding import Confidence, EntityType
+from thragg.core.foundation.entity import Entity
+from thragg.core.foundation.entity_schema import EntityValidationError
+from thragg.core.foundation.finding import Confidence, EntityType
 
 
 def _entity(**overrides) -> Entity:

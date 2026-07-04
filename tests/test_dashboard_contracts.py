@@ -2,12 +2,12 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from thragg.core.dashboard_bundle import (
+from thragg.core.dashboard.dashboard_bundle import (
     DashboardBundle,
     stable_dashboard_bundle_id,
 )
-from thragg.core.dashboard_schema import DashboardSchema, DashboardSchemaError
-from thragg.core.dashboard_view import DashboardView
+from thragg.core.dashboard.dashboard_schema import DashboardSchema, DashboardSchemaError
+from thragg.core.dashboard.dashboard_view import DashboardView
 
 
 def _bundle(**overrides) -> DashboardBundle:

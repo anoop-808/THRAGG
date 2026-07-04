@@ -23,13 +23,13 @@ import hashlib
 
 import pytest
 
-from thragg.core.finding import Confidence, EntityType, Finding, Severity
-from thragg.core.finding_builder import (
+from thragg.core.foundation.finding import Confidence, EntityType, Finding, Severity
+from thragg.core.foundation.finding_builder import (
     build_finding,
     build_findings_from_rule_results,
     _generate_id,
 )
-from thragg.core.finding_schema import (
+from thragg.core.foundation.finding_schema import (
     FindingValidationError,
     is_valid_finding,
     validate_finding,
@@ -153,9 +153,10 @@ class TestEntityType:
 
     def test_all_expected_members_present(self):
         expected = {
-            "HOST", "USER", "SERVICE", "APPLICATION", "CONTAINER",
-            "NETWORK", "STORAGE", "DATABASE", "CLOUD_RESOURCE",
-            "IDENTITY", "UNKNOWN",
+            "HOST", "USER", "SERVICE", "APPLICATION", "IP_ADDRESS",
+            "PORT", "CONTAINER", "NETWORK", "STORAGE", "DATABASE",
+            "CLOUD_RESOURCE", "IDENTITY", "PROCESS", "FILE",
+            "REGISTRY_KEY", "DOMAIN", "CERTIFICATE", "UNKNOWN",
         }
         actual = {e.value for e in EntityType}
         assert expected == actual

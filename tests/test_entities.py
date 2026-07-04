@@ -7,15 +7,15 @@ from thragg.core import EntityValidationError as ExportedEntityValidationError
 from thragg.core import is_valid_entity as exported_is_valid_entity
 from thragg.core import stable_entity_id as exported_stable_entity_id
 from thragg.core import validate_entity as exported_validate_entity
-from thragg.core.constants import Confidence, EntityType, Severity
-from thragg.core.entity import Entity, stable_entity_id
-from thragg.core.entity_extractor import EntityExtractor
-from thragg.core.entity_schema import (
+from thragg.core.shared.constants import Confidence, EntityType, Severity
+from thragg.core.foundation.entity import Entity, stable_entity_id
+from thragg.core.foundation.entity_extractor import EntityExtractor
+from thragg.core.foundation.entity_schema import (
     EntityValidationError,
     is_valid_entity,
     validate_entity,
 )
-from thragg.core.finding import Finding
+from thragg.core.foundation.finding import Finding
 from thragg.modules.example_nmap.module import run
 
 

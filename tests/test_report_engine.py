@@ -1,18 +1,18 @@
 import json
 
-from thragg.core.correlation import Correlation
-from thragg.core.executive_assessment import ExecutiveAssessment
-from thragg.core.finding import Confidence, Severity
-from thragg.core.framework_snapshot import FrameworkSnapshot
-from thragg.core.framework_statistics import CountMetric, FrameworkStatistics
-from thragg.core.html_renderer import HtmlRenderer
-from thragg.core.json_renderer import JsonRenderer
-from thragg.core.markdown_renderer import MarkdownRenderer
-from thragg.core.observation import Observation, ObservationCategory
-from thragg.core.report_engine import ReportEngine
-from thragg.core.risk_level import RiskLevel
-from thragg.core.security_posture import SecurityPosture
-from thragg.core.traceability_map import TraceabilityMap
+from thragg.core.correlation.correlation import Correlation
+from thragg.core.executive.executive_assessment import ExecutiveAssessment
+from thragg.core.foundation.finding import Confidence, Severity
+from thragg.core.executive.framework_snapshot import FrameworkSnapshot
+from thragg.core.executive.framework_statistics import CountMetric, FrameworkStatistics
+from thragg.core.reporting.html_renderer import HtmlRenderer
+from thragg.core.reporting.json_renderer import JsonRenderer
+from thragg.core.reporting.markdown_renderer import MarkdownRenderer
+from thragg.core.executive.observation import Observation, ObservationCategory
+from thragg.core.reporting.report_engine import ReportEngine
+from thragg.core.risk.risk_level import RiskLevel
+from thragg.core.executive.security_posture import SecurityPosture
+from thragg.core.shared.traceability_map import TraceabilityMap
 
 
 def _snapshot() -> FrameworkSnapshot:

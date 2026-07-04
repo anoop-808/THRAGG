@@ -1,14 +1,14 @@
-from thragg.core.attack_chain import AttackChain
-from thragg.core.chain_edge import ChainEdge
-from thragg.core.finding import Confidence, Severity
-from thragg.core.priority_ranker import PriorityRanker
-from thragg.core.risk_assessment import RiskAssessment
-from thragg.core.risk_builder import RiskBuilder
-from thragg.core.risk_contribution import RiskContribution
-from thragg.core.risk_engine import RiskEngine
-from thragg.core.risk_level import RiskLevel
-from thragg.core.risk_repository import RiskRepository
-from thragg.core.score_factor import (
+from thragg.core.attack_chain.attack_chain import AttackChain
+from thragg.core.attack_chain.chain_edge import ChainEdge
+from thragg.core.foundation.finding import Confidence, Severity
+from thragg.core.shared.priority_ranker import PriorityRanker
+from thragg.core.risk.risk_assessment import RiskAssessment
+from thragg.core.risk.risk_builder import RiskBuilder
+from thragg.core.risk.risk_contribution import RiskContribution
+from thragg.core.risk.risk_engine import RiskEngine
+from thragg.core.risk.risk_level import RiskLevel
+from thragg.core.risk.risk_repository import RiskRepository
+from thragg.core.risk.score_factor import (
     ChainLengthFactor,
     ConfidenceFactor,
     CriticalAssetFactor,
@@ -16,7 +16,7 @@ from thragg.core.score_factor import (
     MITREFactor,
     SeverityFactor,
 )
-from thragg.core.scoring_policy import ScoringPolicy
+from thragg.core.risk.scoring_policy import ScoringPolicy
 
 
 def _chain(chain_id: str = "chain-1", **overrides) -> AttackChain:

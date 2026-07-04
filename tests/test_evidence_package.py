@@ -3,16 +3,16 @@ from typing import get_type_hints
 
 import pytest
 
-from thragg.core.evidence_package import (
+from thragg.core.reporting.evidence_package import (
     EvidencePackage,
     EvidencePackageManifest,
     stable_evidence_package_id,
 )
-from thragg.core.evidence_package_schema import (
+from thragg.core.reporting.evidence_package_schema import (
     EvidencePackageSchema,
     EvidencePackageSchemaError,
 )
-from thragg.core.report_renderer import ReportRenderer
+from thragg.core.reporting.report_renderer import ReportRenderer
 
 
 def _manifest(**overrides) -> EvidencePackageManifest:

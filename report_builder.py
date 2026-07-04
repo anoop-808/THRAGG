@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from html import escape
 from typing import Any
 
-from core.evidence_package import EvidencePackage
-from core.report_engine import ReportEngine
-from core.report_renderer import ReportRenderer
+from core.reporting.evidence_package import EvidencePackage
+from core.reporting.report_engine import ReportEngine
+from core.reporting.report_renderer import ReportRenderer
 
 __all__ = [
     "ReportBuilder",

@@ -1,6 +1,6 @@
 from thragg.core import KnowledgeBase, RelationshipGraph
-from thragg.core.core_relationship_fact import RelationshipFact, RelationshipType
-from thragg.core.finding import Confidence, EntityType
+from thragg.core.foundation.core_relationship_fact import RelationshipFact, RelationshipType
+from thragg.core.foundation.finding import Confidence, EntityType
 
 
 def _relationship(**overrides) -> RelationshipFact:

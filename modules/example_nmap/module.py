@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.entity_extractor import EntityExtractor
-from core.finding import EntityType
-from core.finding_builder import build_finding
+from core.foundation.entity_extractor import EntityExtractor
+from core.foundation.finding import EntityType
+from core.foundation.finding_builder import build_finding
 
 
 def run(scan: dict[str, Any], observed_at: str | None = None) -> dict[str, Any]:
