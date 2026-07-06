@@ -11,7 +11,7 @@ validated RelationshipFact objects only.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import networkx as nx
 
@@ -64,11 +64,10 @@ class RelationshipGraph:
 
     def add_edge(self, relationship: object) -> bool:
         """Add a relationship edge, returning False for invalid or duplicate input."""
-        if not isinstance(relationship, RelationshipFact):
+        if not self.can_add_edge(relationship):
             return False
+        relationship = cast(RelationshipFact, relationship)
         if relationship.id in self._edges:
-            return False
-        if not RelationshipValidator.is_valid(relationship):
             return False
 
         self.add_node(relationship.source_entity_id)
@@ -85,6 +84,12 @@ class RelationshipGraph:
             confidence_contribution=relationship.confidence_contribution,
         )
         return True
+
+    def can_add_edge(self, relationship: object) -> bool:
+        """Return whether a relationship can enter the traversal graph."""
+        if not isinstance(relationship, RelationshipFact):
+            return False
+        return RelationshipValidator.is_valid(relationship)
 
     def nodes(self) -> tuple[str, ...]:
         """Return node ids in deterministic order."""

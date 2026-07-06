@@ -9,6 +9,7 @@ from thragg.core import (
     relationship_inference_rule_from_dict,
 )
 from thragg.core.foundation.finding import Confidence, Severity
+import pytest
 
 
 def _contract(module: str, finding: dict) -> dict:
@@ -171,3 +172,36 @@ def test_rules_can_be_constructed_from_plain_data_without_engine_changes():
     assert [item.rule_id for item in correlations] == [
         "CORR-DATA-DRIVEN-HOST-EXPOSES"
     ]
+
+
+def test_contract_pipeline_rejects_malformed_contract_sections():
+    engine = CorrelationEngine(())
+
+    with pytest.raises(TypeError, match="contract must be a dict"):
+        engine.run_contracts(("not-a-contract",))
+
+    with pytest.raises(TypeError, match="metadata must be dict"):
+        engine.run_contracts(
+            (
+                {
+                    "metadata": [],
+                    "summary": {},
+                    "details": {"findings": []},
+                    "artifacts": {},
+                    "errors": [],
+                },
+            )
+        )
+
+    with pytest.raises(TypeError, match="details.findings entries"):
+        engine.run_contracts(
+            (
+                {
+                    "metadata": {"module": "nmap"},
+                    "summary": {},
+                    "details": {"findings": ["bad-finding"]},
+                    "artifacts": {},
+                    "errors": [],
+                },
+            )
+        )

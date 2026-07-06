@@ -31,3 +31,16 @@ class RiskRepository:
             self._assessments[item_id]
             for item_id in sorted(self._assessments)
         )
+
+    def by_priority(self) -> tuple[RiskAssessment, ...]:
+        """Return assessments ordered by assigned priority, then id."""
+        return tuple(
+            sorted(
+                self._assessments.values(),
+                key=lambda item: (
+                    item.priority_rank if item.priority_rank is not None else 999999,
+                    -item.score,
+                    item.id,
+                ),
+            )
+        )

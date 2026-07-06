@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from .risk_assessment import RiskAssessment
 from .risk_contribution import RiskContribution
+from .risk_exceptions import ValidationError
 from .risk_level import RiskLevel
 from .scoring_policy import ScoringPolicy
 from .score_factor import ScoreFactor
 
 __all__ = [
     "RiskSchemaError",
+    "RiskValidator",
     "validate_risk_contribution",
     "is_valid_risk_contribution",
     "validate_scoring_policy",
@@ -24,8 +26,20 @@ __all__ = [
 ]
 
 
-class RiskSchemaError(ValueError):
+class RiskSchemaError(ValidationError, ValueError):
     """Raised when a risk scoring object fails structural validation."""
+
+
+class RiskValidator:
+    """Validate RiskAssessment objects before repository storage."""
+
+    def validate(self, assessment: RiskAssessment) -> None:
+        """Validate one RiskAssessment without mutating it."""
+        validate_risk_assessment(assessment)
+
+    def is_valid(self, assessment: RiskAssessment) -> bool:
+        """Return True when the assessment passes validation."""
+        return is_valid_risk_assessment(assessment)
 
 
 def validate_risk_contribution(contribution: RiskContribution) -> None:

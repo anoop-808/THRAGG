@@ -15,6 +15,7 @@ from typing import Any
 from core.reporting.evidence_package import EvidencePackage
 from core.reporting.report_engine import ReportEngine
 from core.reporting.report_renderer import ReportRenderer
+from core.shared.version import FRAMEWORK_VERSION
 
 __all__ = [
     "ReportBuilder",
@@ -28,7 +29,7 @@ __all__ = [
 class ReportBuilder:
     """Publish human-readable reports from immutable framework objects."""
 
-    framework_version: str = "1.0"
+    framework_version: str = FRAMEWORK_VERSION
     engine_version: str = "application-report-builder"
 
     def build(

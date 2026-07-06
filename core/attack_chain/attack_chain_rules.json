@@ -1,0 +1,24 @@
+{
+  "rules": [
+    {
+      "rule_id": "ATTACK-CHAIN-GENERIC",
+      "title": "Correlated attack progression",
+      "description": "Connected correlations sharing assets or identities form a candidate attack path.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [],
+      "mitre_techniques": []
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-INITIAL-ACCESS-CREDENTIAL-ABUSE",
+      "title": "Initial access to credential abuse",
+      "description": "Initial access followed by credential access or lateral movement indicates a plausible intrusion path.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": ["INITIAL_ACCESS", "CREDENTIAL_ACCESS"],
+      "required_tags": [],
+      "mitre_techniques": ["T1078"]
+    }
+  ]
+}

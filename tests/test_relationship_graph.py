@@ -92,6 +92,21 @@ def test_duplicate_and_malformed_edges_are_rejected():
     assert len(graph) == 1
 
 
+def test_graph_exposes_edge_acceptance_check():
+    graph = RelationshipGraph()
+    valid = _relationship()
+    invalid = _relationship(
+        id="rel-invalid",
+        source_entity_type=EntityType.USER,
+        target_entity_type=EntityType.NETWORK,
+        relationship_type=RelationshipType.HOSTED_IN,
+    )
+
+    assert graph.can_add_edge(valid) is True
+    assert graph.can_add_edge(invalid) is False
+    assert graph.can_add_edge("not-a-relationship") is False
+
+
 def test_incoming_and_outgoing_edges_are_deterministic():
     graph = RelationshipGraph()
     rel_b = _relationship(id="rel-b", target_entity_id="resolved-service-b")

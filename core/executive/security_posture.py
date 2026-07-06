@@ -15,6 +15,11 @@ __all__ = ["SecurityPosture"]
 class SecurityPosture(str, Enum):
     """Executive posture labels produced by deterministic M8 logic."""
 
+    EXCELLENT = "Excellent"
+    GOOD = "Good"
+    FAIR = "Fair"
+    POOR = "Poor"
+    CRITICAL_BUSINESS = "Critical"
     HEALTHY = "HEALTHY"
     OBSERVE = "OBSERVE"
     ELEVATED = "ELEVATED"

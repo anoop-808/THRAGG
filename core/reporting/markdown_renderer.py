@@ -1,45 +1,38 @@
-"""
-core.markdown_renderer
-======================
-
-Milestone 9 Markdown report renderer.
-"""
+"""Backward-compatible Markdown renderer import path."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from .report_renderer import ReportRenderer
+from .renderers.markdown_renderer import MarkdownRenderer as _MarkdownRenderer
 
 __all__ = ["MarkdownRenderer"]
 
 
-class MarkdownRenderer(ReportRenderer):
-    """Render M8 executive assessment data as Markdown."""
+class MarkdownRenderer(_MarkdownRenderer):
+    """Render ReportModel, with legacy ExecutiveAssessment support."""
 
-    format = "markdown"
-    content_type = "text/markdown"
-
-    def render(self, executive_assessment: Any, framework_snapshot: Any) -> str:
-        """Return Markdown mirroring the ExecutiveAssessment contract."""
+    def render(self, report_model: Any, framework_snapshot: Any = None) -> str:
+        if framework_snapshot is None:
+            return super().render(report_model)
         lines = [
             "# THRAGG Executive Assessment",
             "",
-            executive_assessment.summary,
+            report_model.summary,
             "",
             "## Security Posture",
             "",
-            executive_assessment.security_posture.value,
+            report_model.security_posture.value,
             "",
             "## Observations",
             "",
         ]
         lines.extend(
             f"- **{item.severity.value}** {item.text}"
-            for item in executive_assessment.observations
+            for item in report_model.observations
         )
         lines.extend(["", "## Recommendations", ""])
-        lines.extend(f"- {item}" for item in executive_assessment.recommendations)
+        lines.extend(f"- {item}" for item in report_model.recommendations)
         lines.extend(
             [
                 "",

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..shared.stable_id import stable_sha_id
+from ..shared.version import FRAMEWORK_VERSION
 
 __all__ = [
     "EvidencePackageManifest",
@@ -77,7 +78,7 @@ class EvidencePackage:
     files_written: tuple[str, ...]
     generated_at: str
     # Overall THRAGG release; distinct from engine and snapshot schema versions.
-    framework_version: str = "1.0"
+    framework_version: str = FRAMEWORK_VERSION
 
     def __post_init__(self) -> None:
         """Defensively copy caller-owned iterables."""

@@ -5,8 +5,10 @@ from typing import Any
 
 _EXPORTS = {
     "AttackStage": ".correlation_rule",
+    "ConfidenceScore": ".confidence_model",
     "Correlation": ".correlation",
     "CorrelationBuilder": ".correlation_builder",
+    "CorrelationConfidenceModel": ".confidence_model",
     "CorrelationEngine": ".correlation_engine",
     "CorrelationRepository": ".correlation_repository",
     "CorrelationRule": ".correlation_rule",

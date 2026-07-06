@@ -21,3 +21,4 @@ class ChainCandidate:
     correlation_ids: tuple[str, ...]
     edges: tuple[ChainEdge, ...]
     entities: tuple[str, ...]
+    rule_id: str = "ATTACK-CHAIN-GENERIC"

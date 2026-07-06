@@ -3,6 +3,9 @@ __pycache__/
 .pytest_cache/
 *.pyc
 *.pyo
+*.bak
+*.tmp
+*~
 venv/
 .venv/
 

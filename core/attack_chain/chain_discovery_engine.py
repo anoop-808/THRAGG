@@ -7,6 +7,7 @@ Deterministic DFS discovery of connected Correlation components.
 
 from __future__ import annotations
 
+from .attack_chain_rule import AttackChainRule, AttackChainRuleRepository
 from .chain_candidate import ChainCandidate
 from .chain_edge import ChainEdge, affinity_score
 from ..correlation.correlation import Correlation
@@ -21,6 +22,9 @@ STAGE_ORDER = {stage.value: index for index, stage in enumerate(AttackStage)}
 
 class ChainDiscoveryEngine:
     """Discover connected correlations. No validation or filtering."""
+
+    def __init__(self, rules: tuple[AttackChainRule, ...] | None = None) -> None:
+        self.rules = rules or AttackChainRuleRepository().list()
 
     def discover(
         self,
@@ -47,11 +51,15 @@ class ChainDiscoveryEngine:
                 if edge.from_correlation_id in component
                 and edge.to_correlation_id in component
             )
+            component_correlations = tuple(
+                correlations[item_id] for item_id in sorted(component)
+            )
             candidates.append(
                 ChainCandidate(
                     correlation_ids=tuple(sorted(component)),
                     edges=component_edges,
                     entities=self._candidate_entities(correlations, component),
+                    rule_id=self._rule_id(component_correlations),
                 )
             )
         return tuple(candidates)
@@ -135,6 +143,18 @@ class ChainDiscoveryEngine:
                     if "id" in entity
                 }
             )
+        )
+
+    def _rule_id(self, correlations: tuple[Correlation, ...]) -> str:
+        specific_rules = tuple(
+            sorted(
+                self.rules,
+                key=lambda rule: (not rule.stage_sequence, rule.rule_id),
+            )
+        )
+        return next(
+            (rule.rule_id for rule in specific_rules if rule.matches(correlations)),
+            "ATTACK-CHAIN-GENERIC",
         )
 
 

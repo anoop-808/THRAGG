@@ -57,6 +57,10 @@ class CorrelationEngine:
         resolved_entities: dict[str, ResolvedEntity] | None = None,
     ) -> tuple[Correlation, ...]:
         """Evaluate all rules and return stored correlations."""
+        if not isinstance(knowledge_base, KnowledgeBase):
+            raise TypeError("knowledge_base must be a KnowledgeBase")
+        if resolved_entities is not None and not isinstance(resolved_entities, dict):
+            raise TypeError("resolved_entities must be a dict or None")
         for rule in self.rules:
             for match in self.evaluator.evaluate(rule, knowledge_base, resolved_entities):
                 self.repository.add(self.builder.build(rule, match))
@@ -66,6 +70,8 @@ class CorrelationEngine:
         self, contracts: tuple[dict[str, Any], ...]
     ) -> tuple[Correlation, ...]:
         """Build the correlation foundation from validated THRAGG contracts."""
+        if not isinstance(contracts, (tuple, list)):
+            raise TypeError("contracts must be a tuple or list of THRAGG contracts")
         findings = self._findings_from_contracts(contracts)
         extracted = EntityExtractor.extract_batch(list(findings))
         resolved = self.entity_registry.register(extracted)
@@ -96,19 +102,37 @@ class CorrelationEngine:
 
     @staticmethod
     def _validate_contract(contract: dict[str, Any]) -> None:
+        if not isinstance(contract, dict):
+            raise TypeError("Invalid THRAGG contract; contract must be a dict")
         required = ("metadata", "summary", "details", "artifacts", "errors")
         missing = [key for key in required if key not in contract]
         if missing:
             raise ValueError(f"Invalid THRAGG contract; missing {missing}")
+        expected_types = {
+            "metadata": dict,
+            "summary": dict,
+            "details": dict,
+            "artifacts": dict,
+            "errors": list,
+        }
+        for key, expected_type in expected_types.items():
+            if not isinstance(contract[key], expected_type):
+                raise TypeError(
+                    "Invalid THRAGG contract; "
+                    f"{key} must be {expected_type.__name__}"
+                )
         if not isinstance(contract["details"].get("findings", []), list):
             raise ValueError("Invalid THRAGG contract; details.findings must be a list")
 
     @staticmethod
-    def _coerce_finding(raw: Any, source_module: str) -> Finding | None:
+    def _coerce_finding(raw: Any, source_module: str) -> Finding:
         if isinstance(raw, Finding):
             return raw
         if not isinstance(raw, dict):
-            return None
+            raise TypeError(
+                "Invalid THRAGG contract; details.findings entries must be dicts "
+                "or Finding objects"
+            )
         evidence = dict(raw.get("evidence") or {})
         for key in (
             "asset",

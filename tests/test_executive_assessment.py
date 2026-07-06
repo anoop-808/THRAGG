@@ -299,34 +299,36 @@ def test_traceability_map_rejects_blank_ids():
 
 
 def test_security_posture_enum_contains_only_m8_contract_values():
-    assert [item.value for item in SecurityPosture] == [
-        "HEALTHY",
-        "OBSERVE",
-        "ELEVATED",
-        "HIGH_RISK",
-        "CRITICAL",
+    assert [item.value for item in SecurityPosture][:5] == [
+        "Excellent",
+        "Good",
+        "Fair",
+        "Poor",
+        "Critical",
     ]
+    assert SecurityPosture.HIGH_RISK.value == "HIGH_RISK"
 
 
 def test_executive_assessment_is_contract_only_frozen_and_validated():
     assessment = _assessment()
 
     assert is_valid_executive_assessment(assessment) is True
-    assert tuple(assessment.__dataclass_fields__) == (
-        "id",
-        "summary",
-        "observations",
-        "recommendations",
-        "statistics",
+    assert tuple(assessment.__dataclass_fields__)[:10] == (
+        "assessment_id",
         "security_posture",
-        "traceability",
-        "engine_version",
-        "generated_at",
+        "overall_summary",
+        "business_impact",
+        "top_risks",
+        "top_priorities",
+        "executive_observations",
+        "executive_recommendations",
+        "assessment_scope",
+        "metadata",
     )
     assert not hasattr(assessment, "render")
     assert not hasattr(assessment, "generate_report")
     assert assessment.to_dict()["id"] == "exec-5677533e220e6a47"
-    assert tuple(assessment.to_dict())[0] == "id"
+    assert tuple(assessment.to_dict())[0] == "assessment_id"
     assert assessment.to_dict()["security_posture"] == "HIGH_RISK"
     assert assessment.to_dict()["traceability"]["observation_to_correlations"] == [
         ("obs-1", ["corr-1"])

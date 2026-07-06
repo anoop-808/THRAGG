@@ -11,6 +11,7 @@ from thragg.core.reporting.markdown_renderer import MarkdownRenderer
 from thragg.core.executive.observation import Observation, ObservationCategory
 from thragg.core.reporting.report_engine import ReportEngine
 from thragg.core.risk.risk_level import RiskLevel
+from thragg.core.shared.version import FRAMEWORK_VERSION
 from thragg.core.executive.security_posture import SecurityPosture
 from thragg.core.shared.traceability_map import TraceabilityMap
 
@@ -124,6 +125,8 @@ def test_report_engine_registers_and_runs_every_renderer(tmp_path):
     assert len(engine.renderers) == 1
     assert (tmp_path / "report.txt").read_text(encoding="utf-8") == "exec-test:3"
     assert package.files_written == ("report.txt", "manifest.json")
+    assert package.framework_version == FRAMEWORK_VERSION
+    assert package.manifest.thragg_version == FRAMEWORK_VERSION
 
 
 def test_report_engine_creates_manifest_package_and_reports(tmp_path):

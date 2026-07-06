@@ -12,7 +12,7 @@ never mutates the facts it receives.
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .core_relationship_fact import RelationshipFact
 from .core_relationship_validator import RelationshipValidator
@@ -50,11 +50,10 @@ class KnowledgeBase:
 
     def add_relationship(self, relationship: object) -> bool:
         """Store a validated relationship, returning False when rejected."""
-        if not isinstance(relationship, RelationshipFact):
+        if not self.can_add_relationship(relationship):
             return False
+        relationship = cast(RelationshipFact, relationship)
         if relationship.id in self._relationships:
-            return False
-        if not RelationshipValidator.is_valid(relationship):
             return False
 
         self._relationships[relationship.id] = relationship
@@ -65,6 +64,12 @@ class KnowledgeBase:
             relationship.id
         )
         return True
+
+    def can_add_relationship(self, relationship: object) -> bool:
+        """Return whether a relationship can enter the knowledge base."""
+        if not isinstance(relationship, RelationshipFact):
+            return False
+        return RelationshipValidator.is_valid(relationship)
 
     def add_relationships(
         self, relationships: Iterable[object]

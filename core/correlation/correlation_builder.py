@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from .correlation import Correlation
-from ..risk.confidence_model import CorrelationConfidenceModel
+from .confidence_model import CorrelationConfidenceModel
 from .correlation_rule import CorrelationRule
 from .pattern_evaluator import PatternMatch
 from ..shared.stable_id import stable_sha_id

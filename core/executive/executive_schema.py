@@ -10,6 +10,7 @@ from __future__ import annotations
 from ..attack_chain.attack_chain import AttackChain
 from ..correlation.correlation import Correlation
 from .executive_assessment import ExecutiveAssessment
+from .executive_validator import ExecutiveValidationError, ExecutiveValidator
 from ..foundation.finding import Confidence, Severity
 from .framework_snapshot import FrameworkSnapshot
 from .framework_statistics import CountMetric, FrameworkStatistics
@@ -180,6 +181,10 @@ def is_valid_traceability_map(traceability: TraceabilityMap) -> bool:
 
 def validate_executive_assessment(assessment: ExecutiveAssessment) -> None:
     """Validate an ExecutiveAssessment without mutating it."""
+    try:
+        ExecutiveValidator().validate(assessment)
+    except ExecutiveValidationError as exc:
+        raise ExecutiveSchemaError(str(exc)) from exc
     _non_empty_string(assessment.id, "ExecutiveAssessment.id")
     _non_empty_string(assessment.summary, "ExecutiveAssessment.summary")
     _non_empty_string(
@@ -191,11 +196,15 @@ def validate_executive_assessment(assessment: ExecutiveAssessment) -> None:
         raise ExecutiveSchemaError(
             "ExecutiveAssessment.security_posture must be a SecurityPosture enum"
         )
+    if assessment.statistics is None:
+        return
     if not isinstance(assessment.statistics, FrameworkStatistics):
         raise ExecutiveSchemaError(
             "ExecutiveAssessment.statistics must be FrameworkStatistics"
         )
     validate_framework_statistics(assessment.statistics)
+    if assessment.traceability is None:
+        return
     if not isinstance(assessment.traceability, TraceabilityMap):
         raise ExecutiveSchemaError(
             "ExecutiveAssessment.traceability must be TraceabilityMap"

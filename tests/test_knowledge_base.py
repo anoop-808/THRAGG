@@ -128,6 +128,21 @@ def test_invalid_relationships_never_enter_knowledge_base():
     assert len(kb) == 0
 
 
+def test_knowledge_base_exposes_relationship_acceptance_check():
+    kb = KnowledgeBase()
+    valid = _relationship()
+    invalid = _relationship(
+        id="rel-invalid",
+        source_entity_type=EntityType.USER,
+        target_entity_type=EntityType.NETWORK,
+        relationship_type=RelationshipType.HOSTED_IN,
+    )
+
+    assert kb.can_add_relationship(valid) is True
+    assert kb.can_add_relationship(invalid) is False
+    assert kb.can_add_relationship("not-a-relationship") is False
+
+
 def test_build_graph_uses_stored_valid_relationships_only():
     kb = KnowledgeBase()
     valid = _relationship(id="rel-a")
