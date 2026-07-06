@@ -1,12 +1,18 @@
 /* ==========================================================================
-   THRAGG — Mock Dataset
+   THRAGG — Data Layer
    ==========================================================================
-   This file provides realistic demo data that mirrors the JSON structure
-   the backend DashboardGenerator embeds into dashboard_template.html.
-   It will be replaced by real backend data in the next session.
+   When integrated with the backend via DashboardGenerator, THRAGG_DATA
+   is set from the embedded JSON in dashboard_template.html.
+   When running standalone for development (opening frontend/index.html),
+   this file provides realistic mock data.
    ========================================================================== */
 
-const THRAGG_DATA = {
+/* Check if THRAGG_DATA was already set from embedded backend JSON */
+if (typeof window.THRAGG_DATA === 'undefined' || window.THRAGG_DATA === null || Object.keys(window.THRAGG_DATA).length === 0) {
+
+  console.info('[THRAGG] No embedded data found — using mock dataset.');
+
+  window.THRAGG_DATA = {
   views: [
     "EXECUTIVE_SUMMARY",
     "RISK_PRIORITY",
@@ -452,3 +458,4 @@ const THRAGG_DATA = {
     "Finding"
   ]
 };
+} /* end of mock data condition */

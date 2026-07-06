@@ -1,100 +1,99 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>THRAGG Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THRAGG Intelligence Dashboard</title>
+
+  <!-- Preconnect to Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="../frontend/css/design-tokens.css">
+  <link rel="stylesheet" href="../frontend/css/reset.css">
+  <link rel="stylesheet" href="../frontend/css/typography.css">
+  <link rel="stylesheet" href="../frontend/css/animations.css">
+
+  <!-- Layout & Components -->
+  <link rel="stylesheet" href="../frontend/css/layout.css">
+  <link rel="stylesheet" href="../frontend/css/components.css">
+  <link rel="stylesheet" href="../frontend/css/intelligence-core.css">
+  <link rel="stylesheet" href="../frontend/css/views.css">
+
+  <meta name="description" content="THRAGG Cybersecurity Intelligence Dashboard">
+  <meta name="theme-color" content="#070b14">
+
   <style>
-    :root { color-scheme: light; --ink: #1d2430; --muted: #697386; --line: #d8dee8; --paper: #fbfaf7; --accent: #8a3ffc; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: var(--ink); background: var(--paper); line-height: 1.55; }
-    header, main { max-width: 1180px; margin: 0 auto; padding: 28px; }
-    header { border-bottom: 1px solid var(--line); }
-    h1 { margin: 0 0 8px; font-size: 40px; font-weight: 500; }
-    h2 { margin-top: 0; font-size: 28px; font-weight: 500; }
-    h3 { margin-bottom: 6px; }
-    nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
-    button { border: 1px solid var(--line); background: white; color: var(--ink); padding: 8px 11px; cursor: pointer; font: inherit; }
-    button.active, button:hover { border-color: var(--accent); }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
-    .panel { border-top: 1px solid var(--line); padding-top: 18px; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-    .card { background: white; border: 1px solid var(--line); padding: 14px; }
-    .muted { color: var(--muted); }
-    .item { border-top: 1px solid var(--line); padding: 12px 0; }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: white; border: 1px solid var(--line); padding: 12px; }
-    aside { position: sticky; top: 16px; align-self: start; background: white; border: 1px solid var(--line); padding: 16px; }
-    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } aside { position: static; } }
+    @keyframes loadingBar {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
   </style>
 </head>
 <body>
+  <!-- Embedded backend JSON data (injected by DashboardGenerator) -->
   <script id="thragg-dashboard-data" type="application/json">__THRAGG_DASHBOARD_DATA__</script>
-  <header>
-    <h1>THRAGG Dashboard</h1>
-    <div class="muted" id="generated"></div>
-    <nav id="nav" aria-label="Dashboard views"></nav>
-  </header>
-  <main class="layout">
-    <section id="view" class="panel"></section>
-    <aside>
-      <h2>Explain This</h2>
-      <div id="explain"></div>
-    </aside>
-  </main>
+
+  <noscript>
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#070b14;color:#94a3b8;font-family:Inter,sans-serif;text-align:center;padding:24px;">
+      <div>
+        <h1 style="color:#f1f5f9;font-size:20px;margin-bottom:12px;">THRAGG Dashboard</h1>
+        <p>JavaScript is required to render this dashboard.</p>
+        <p style="font-size:13px;margin-top:8px;">Please enable JavaScript and reload the page.</p>
+      </div>
+    </div>
+  </noscript>
+
+  <div id="app">
+    <!-- Initial loading state — replaced by app.js init -->
+    <div id="loading-splash" style="display:flex;align-items:center;justify-content:center;height:100vh;background:#070b14;flex-direction:column;gap:16px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;font-family:Inter,sans-serif;">T</div>
+      <div style="width:120px;height:3px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+        <div style="width:40%;height:100%;background:linear-gradient(90deg,#6c5ce7,#a29bfe);border-radius:4px;animation:loadingBar 1.2s ease-in-out infinite;"></div>
+      </div>
+      <div style="font-size:11px;color:#64748b;font-family:Inter,sans-serif;letter-spacing:0.08em;text-transform:uppercase;">Loading Intelligence Core</div>
+    </div>
+  </div>
+
+  <!-- Read embedded JSON and set as THRAGG_DATA before loading components -->
   <script>
-    const data = JSON.parse(document.getElementById("thragg-dashboard-data").textContent);
-    const byId = names => Object.fromEntries(names.map(name => [name, Object.fromEntries((data[name] || []).map(item => [item.id, item]))]));
-    const maps = byId(["risk_assessments", "attack_chains", "correlations", "relationships", "resolved_entities", "entities", "findings"]);
-    const title = text => text.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    const list = (items, type) => (items || []).map(item => `<div class="item"><strong>${esc(item.title || item.id)}</strong><br><span class="muted">${esc(item.severity || item.risk_level || item.category || "")}</span><br><button data-explain="${type}" data-id="${esc(item.id)}">Explain This</button></div>`).join("") || "<p class=\"muted\">No data.</p>";
-
-    document.getElementById("generated").textContent = `Generated ${data.generated_at}`;
-    document.getElementById("nav").innerHTML = data.views.map(view => `<button data-view="${view}">${title(view)}</button>`).join("");
-    document.getElementById("nav").addEventListener("click", event => event.target.dataset.view && render(event.target.dataset.view));
-    document.body.addEventListener("click", event => event.target.dataset.explain && explain(event.target.dataset.explain, event.target.dataset.id));
-
-    function render(view) {
-      document.querySelectorAll("nav button").forEach(button => button.classList.toggle("active", button.dataset.view === view));
-      const snapshot = data.framework_snapshot;
-      const assessment = data.executive_assessment;
-      const views = {
-        EXECUTIVE_SUMMARY: `<h2>Executive Summary</h2><p>${esc(assessment.summary)}</p><div class="cards"><div class="card"><strong>${esc(assessment.security_posture)}</strong><br>Security posture</div><div class="card"><strong>${snapshot.finding_count}</strong><br>Findings</div><div class="card"><strong>${snapshot.relationship_count}</strong><br>Relationships</div></div><p><button data-explain="ExecutiveAssessment" data-id="${esc(assessment.id)}">Explain This</button></p>`,
-        RISK_PRIORITY: `<h2>Risk Priority</h2>${list(data.risk_assessments, "RiskAssessment")}`,
-        ATTACK_CHAINS: `<h2>Attack Chains</h2>${list(data.attack_chains, "AttackChain")}`,
-        CORRELATIONS: `<h2>Correlations</h2>${list(data.correlations, "Correlation")}`,
-        KNOWLEDGE_GRAPH: `<h2>Knowledge Graph</h2>${list(data.relationships, "Relationship")}${list(data.resolved_entities, "ResolvedEntity")}`,
-        MITRE_MATRIX: `<h2>MITRE Matrix</h2>${list(data.correlations.filter(item => (item.mitre || []).length), "Correlation")}`,
-        EVIDENCE_EXPLORER: `<h2>Evidence Explorer</h2>${list(data.findings, "Finding")}`,
-      };
-      document.getElementById("view").innerHTML = views[view] || "";
+    try {
+      const embeddedData = document.getElementById('thragg-dashboard-data');
+      if (embeddedData && embeddedData.textContent && embeddedData.textContent !== '__THRAGG_DASHBOARD_DATA__') {
+        window.THRAGG_DATA = JSON.parse(embeddedData.textContent);
+      }
+    } catch (e) {
+      console.warn('Failed to parse embedded dashboard data:', e);
     }
-
-    function explain(type, id) {
-      const object = type === "ExecutiveAssessment" ? data.executive_assessment : (maps[typeToCollection(type)] || {})[id];
-      const body = object ? `<pre>${esc(JSON.stringify(object, null, 2))}</pre>${linksFor(type, object)}` : `<p class="muted">Referenced ${esc(type)} ${esc(id)} is not embedded in this dashboard.</p>`;
-      document.getElementById("explain").innerHTML = `<h3>${esc(type)}</h3>${body}`;
-    }
-
-    function typeToCollection(type) {
-      return ({ RiskAssessment: "risk_assessments", AttackChain: "attack_chains", Correlation: "correlations", Relationship: "relationships", ResolvedEntity: "resolved_entities", Entity: "entities", Finding: "findings" })[type];
-    }
-
-    function linksFor(type, object) {
-      const link = (nextType, id) => `<button data-explain="${nextType}" data-id="${esc(id)}">${esc(nextType)}: ${esc(id)}</button>`;
-      const ids = value => Array.isArray(value) ? value : [];
-      if (type === "ExecutiveAssessment") return data.risk_assessments.map(item => link("RiskAssessment", item.id)).join(" ");
-      if (type === "RiskAssessment") return object.attack_chain_id ? link("AttackChain", object.attack_chain_id) : "";
-      if (type === "AttackChain") return [...ids(object.correlations).map(id => link("Correlation", id)), ...ids(object.relationships).map(id => link("Relationship", id)), ...ids(object.entities).map(id => link("ResolvedEntity", id)), ...ids(object.supporting_findings).map(id => link("Finding", id))].join(" ");
-      if (type === "Correlation") return [...ids(object.matched_relationships).map(id => link("Relationship", id)), ...ids(object.matched_entities).map(item => link("ResolvedEntity", item.id || item)), ...ids(object.supporting_findings).map(id => link("Finding", id))].join(" ");
-      if (type === "Relationship") return [object.source_entity_id, object.target_entity_id].filter(Boolean).map(id => link("ResolvedEntity", id)).concat(ids(object.supporting_findings).map(id => link("Finding", id))).join(" ");
-      if (type === "ResolvedEntity") return [...ids(object.source_entities).map(id => link("Entity", id)), ...ids(object.source_findings).map(id => link("Finding", id))].join(" ");
-      if (type === "Entity") return object.source_finding ? link("Finding", object.source_finding) : "";
-      return "";
-    }
-
-    render("EXECUTIVE_SUMMARY");
-    explain("ExecutiveAssessment", data.executive_assessment.id);
+    // Clear loading splash once data is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      var splash = document.getElementById('loading-splash');
+      if (splash) splash.style.display = 'none';
+    });
   </script>
+
+  <!-- Application scripts -->
+  <script src="../frontend/js/utils/charts.js"></script>
+  <script src="../frontend/js/utils/animations.js"></script>
+
+  <script src="../frontend/js/components/Sidebar.js"></script>
+  <script src="../frontend/js/components/TopNavigation.js"></script>
+  <script src="../frontend/js/components/IntelligenceCore.js"></script>
+  <script src="../frontend/js/components/AssessmentScope.js"></script>
+  <script src="../frontend/js/components/KPICards.js"></script>
+  <script src="../frontend/js/components/SecurityPosture.js"></script>
+  <script src="../frontend/js/components/RiskDistribution.js"></script>
+  <script src="../frontend/js/components/DomainCoverage.js"></script>
+  <script src="../frontend/js/components/AttackChainExplorer.js"></script>
+  <script src="../frontend/js/components/MITRECoverage.js"></script>
+  <script src="../frontend/js/components/TraceabilityExplorer.js"></script>
+  <script src="../frontend/js/components/KnowledgeGraph.js"></script>
+  <script src="../frontend/js/components/Recommendations.js"></script>
+  <script src="../frontend/js/components/ReportDownloads.js"></script>
+  <script src="../frontend/js/components/ActivityTimeline.js"></script>
+
+  <script src="../frontend/js/app.js"></script>
 </body>
 </html>
