@@ -30,3 +30,11 @@ tmp_evidence/
 # OS
 .DS_Store
 Thumbs.db
+
+# Build artifacts
+dist/
+build/
+dashboard.html
+
+# Web adapter runtime — session uploads, reports, and state files
+web_sessions/

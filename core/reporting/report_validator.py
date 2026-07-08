@@ -81,7 +81,7 @@ class ReportValidator:
 
     # ------------------------------------------------------------------
 
-    def _collect_recommendation_ids(self, report: Report) -> list[str]:
+    def _collect_recommendation_ids(self, report: ReportModel) -> list[str]:
         from .section import ContentType
         ids = []
         for section in report.sections:

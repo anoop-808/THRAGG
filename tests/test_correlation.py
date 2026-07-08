@@ -340,8 +340,9 @@ def test_engine_orchestration_generates_builtin_correlation():
 
     correlations = engine.run(kb, entities)
 
-    assert [correlation.rule_id for correlation in correlations] == [
+    assert sorted([correlation.rule_id for correlation in correlations]) == [
         "CORR-ADMIN-AUTH-EXPOSED-SYSTEM",
+        "CORR-BRUTE-FORCE-SSH-EXPOSURE",
         "CORR-PUBLIC-SSH-PRIVILEGED-ACCOUNT",
     ]
 

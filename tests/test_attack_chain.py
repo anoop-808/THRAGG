@@ -57,7 +57,7 @@ def _correlation(
         tags=(),
         timestamp=timestamp,
         matched_entities=tuple(
-            {"id": entity_id, "entity_type": entity_type}
+            {"id": entity_id, "type": entity_type}
             for entity_id, entity_type in entities
         ),
         matched_relationships=relationships,

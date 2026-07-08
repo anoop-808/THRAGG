@@ -81,7 +81,9 @@ class AttackPatternMatcher:
 
         traverser = RelationshipTraverser(graph, entities, self._templates)
         results: list[TemplateMatchResult] = []
-        for path in traverser.find_attack_paths():
+        paths = list(traverser.find_attack_paths())
+        print(f"Traverser returned {len(paths)} paths.")
+        for path in paths:
             results.extend(self.match_path(path, correlations))
         return tuple(sorted(results, key=lambda r: r.overall_score, reverse=True))
 
@@ -120,7 +122,7 @@ class AttackPatternMatcher:
                 key=lambda item: self._path_order(item, path.relationship_ids),
             )
         )
-        if len(matched) < 2:
+        if len(matched) < 1:
             return None
 
         correlation_ids = tuple(correlation.id for correlation in matched)
@@ -129,7 +131,7 @@ class AttackPatternMatcher:
             for left, right in zip(matched, matched[1:])
             for edge in self._candidate_edges(left, right)
         )
-        if not edges:
+        if not edges and len(matched) > 1:
             return None
 
         return ChainCandidate(
@@ -159,7 +161,7 @@ class AttackPatternMatcher:
 
     def _entity_map(self, correlation: Correlation) -> dict[str, str]:
         return {
-            str(entity["id"]): str(entity.get("entity_type", "UNKNOWN"))
+            str(entity["id"]): str(entity.get("type", "UNKNOWN"))
             for entity in correlation.matched_entities
             if "id" in entity
         }
@@ -265,8 +267,8 @@ class AttackPatternMatcher:
             corr = corr_by_id.get(corr_id)
             if corr:
                 for entity in corr.matched_entities:
-                    if "entity_type" in entity:
-                        candidate_entity_types.add(entity["entity_type"])
+                    if "type" in entity:
+                        candidate_entity_types.add(entity["type"])
 
         if not candidate_entity_types:
             return 0.0
@@ -318,7 +320,7 @@ class AttackPatternMatcher:
 
         # Check if any matched entity matches the entry point type
         for entity in entry_corr.matched_entities:
-            if entity.get("entity_type") == template.entry_point_type:
+            if entity.get("type") == template.entry_point_type:
                 return True
 
         return False

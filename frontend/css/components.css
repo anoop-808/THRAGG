@@ -38,6 +38,7 @@
   background: rgba(255, 255, 255, 0.10);
   color: var(--text-primary);
   border-color: var(--border-medium);
+  transform: translateY(-1px);
 }
 
 .btn-ghost {
@@ -49,6 +50,7 @@
 .btn-ghost:hover {
   color: var(--text-secondary);
   background: var(--bg-glass-hover);
+  transform: translateY(-1px);
 }
 
 .btn-sm {

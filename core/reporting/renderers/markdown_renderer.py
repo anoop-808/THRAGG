@@ -12,6 +12,8 @@ Design constraints
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..report import Report
 from ..section import Section, ContentType
 
@@ -20,7 +22,40 @@ class MarkdownRenderer:
     format = "markdown"
     content_type = "text/markdown"
 
-    def render(self, report: Report) -> str:
+    def render(self, report: Any, framework_snapshot: Any = None) -> str:
+        if framework_snapshot is not None:
+            lines = [
+                "# THRAGG Executive Assessment",
+                "",
+                report.summary,
+                "",
+                "## Security Posture",
+                "",
+                report.security_posture.value,
+                "",
+                "## Observations",
+                "",
+            ]
+            lines.extend(
+                f"- **{item.severity.value}** {item.text}"
+                for item in report.observations
+            )
+            lines.extend(["", "## Recommendations", ""])
+            lines.extend(f"- {item}" for item in report.recommendations)
+            lines.extend(
+                [
+                    "",
+                    "## Snapshot",
+                    "",
+                    f"- Findings: {framework_snapshot.finding_count}",
+                    f"- Entities: {framework_snapshot.entity_count}",
+                    f"- Resolved entities: {framework_snapshot.resolved_entity_count}",
+                    f"- Relationships: {framework_snapshot.relationship_count}",
+                    "",
+                ]
+            )
+            return "\n".join(lines)
+
         lines: list[str] = []
         lines.append(f"# {report.title}")
         lines.append(f"\n_Generated: {report.generated_at} · THRAGG v{report.framework_version}_\n")

@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THRAGG — Upload Evidence</title>
+  <meta name="description" content="THRAGG Threat Hunting, Recon & Automated Gap Analysis Gateway — Upload evidence files for local offline security analysis." />
+  <meta name="theme-color" content="#070b14" />
+
+  <style>
+    /* ── Design Tokens (inline — no external dependencies) ─────────── */
+    :root {
+      --bg-deep:         #070b14;
+      --bg-base:         #0a0f1e;
+      --bg-surface:      #0f1527;
+      --bg-elevated:     #161e33;
+      --bg-glass:        rgba(255, 255, 255, 0.03);
+      --bg-glass-hover:  rgba(255, 255, 255, 0.06);
+      --border-glass:    rgba(255, 255, 255, 0.06);
+      --border-subtle:   rgba(255, 255, 255, 0.08);
+      --border-medium:   rgba(255, 255, 255, 0.12);
+      --text-primary:    #f1f5f9;
+      --text-secondary:  #94a3b8;
+      --text-muted:      #64748b;
+      --brand-primary:   #6c5ce7;
+      --brand-light:     #a29bfe;
+      --brand-gradient:  linear-gradient(135deg, #6c5ce7, #a29bfe);
+      --brand-cyan:      #00d2ff;
+      --color-critical:  #ef4444;
+      --color-high:      #f97316;
+      --color-medium:    #eab308;
+      --color-low:       #22c55e;
+      --color-info:      #3b82f6;
+      --font-sans:       -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      --font-mono:       'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      --radius-sm:       4px;
+      --radius-md:       8px;
+      --radius-lg:       12px;
+      --radius-xl:       16px;
+      --radius-2xl:      20px;
+      --shadow-md:       0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg:       0 8px 32px rgba(0, 0, 0, 0.5);
+      --shadow-glow:     0 0 24px rgba(108, 92, 231, 0.18);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+
+    /* ── Views ──────────────────────────────────────────────────────── */
+    .view-container {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      inset: 0;
+      padding: 40px 20px;
+    }
+    .view-container.active {
+      display: flex;
+    }
+
+    /* ── Ingestion Animation & Core ─────────────────────────────────── */
+    #thragg-core {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      box-shadow: 0 0 30px rgba(108, 92, 231, 0.4);
+      position: relative;
+      z-index: 10;
+      transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+      animation: corePulseAtmosphere 4s ease-in-out infinite;
+    }
+    #thragg-core::before {
+      content: '';
+      position: absolute;
+      inset: -18px;
+      border: 1px dashed rgba(108, 92, 231, 0.3);
+      border-radius: 50%;
+      animation: spinRing 25s linear infinite;
+      pointer-events: none;
+    }
+    #thragg-core::after {
+      content: '';
+      position: absolute;
+      inset: -36px;
+      border: 1px solid rgba(0, 210, 255, 0.1);
+      border-radius: 50%;
+      animation: spinRingReverse 35s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes spinRing { 100% { transform: rotate(360deg); } }
+    @keyframes spinRingReverse { 100% { transform: rotate(-360deg); } }
+    @keyframes corePulseAtmosphere {
+      0%, 100% { box-shadow: 0 0 30px rgba(108, 92, 231, 0.4); }
+      50% { box-shadow: 0 0 50px rgba(108, 92, 231, 0.6), 0 0 20px rgba(0, 210, 255, 0.2); }
+    }
+    #thragg-core.pulse {
+      transform: scale(1.25);
+      box-shadow: 0 0 70px rgba(108, 92, 231, 0.9), 0 0 120px rgba(0, 210, 255, 0.5);
+    }
+    .flying-file {
+      position: fixed;
+      z-index: 20;
+      transition: transform 0.9s cubic-bezier(0.2, 0, 0, 1), opacity 0.8s ease, filter 0.8s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(15, 21, 39, 0.95);
+      border: 1px solid var(--brand-primary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-glow);
+    }
+    .flying-file.to-light {
+      filter: brightness(2) contrast(1.5) drop-shadow(0 0 25px rgba(255,255,255,0.8));
+    }
+    
+    /* ── Chamber Enhancements ───────────────────────────────────────── */
+    .module-nodes {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .module-node {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.5s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .module-node.scanning {
+      border-color: var(--brand-light);
+      color: var(--text-primary);
+      background: rgba(108, 92, 231, 0.1);
+      box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
+      animation: pulseBorder 1.5s infinite;
+      will-change: box-shadow;
+    }
+    .module-node.complete {
+      border-color: var(--color-low);
+      color: var(--color-low);
+      background: rgba(34, 197, 94, 0.08);
+      box-shadow: none;
+    }
+    @keyframes pulseBorder {
+      50% { box-shadow: 0 0 4px rgba(108, 92, 231, 0.05); }
+    }
+    
+    .live-counters {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .counter-box {
+      text-align: center;
+    }
+    .counter-value {
+      font-size: 2rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .counter-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+    
+    /* ── Completion Transition ──────────────────────────────────────── */
+    #view-chamber.transitioning {
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    #completion-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-deep);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+    #completion-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .completion-text {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #fff;
+      margin-top: 30px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s cubic-bezier(0.2, 0, 0, 1) 0.3s;
+    }
+    #completion-overlay.active .completion-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .chamber-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .chamber-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .chamber-session {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--brand-light);
+    }
+    .chamber-pipeline {
+      width: 100%;
+      max-width: 600px;
+      background: rgba(15, 21, 39, 0.75);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-2xl);
+      padding: 32px 40px;
+      box-shadow: var(--shadow-lg);
+    }
+    .chamber-pipeline .pipeline-step {
+      padding: 14px 0;
+    }
+    .chamber-pipeline .pipeline-step:not(:last-child)::after {
+      top: 46px;
+      height: calc(100% - 30px);
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Animated background ────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(108, 92, 231, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 90%, rgba(0, 210, 255, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Grid lines decoration ──────────────────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,92,231,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,92,231,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Page layout ────────────────────────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Header / Logo ──────────────────────────────────────────────── */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .brand-shield {
+      width: 44px;
+      height: 44px;
+      background: var(--brand-gradient);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-version {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: 99px;
+      padding: 3px 10px;
+      margin-left: 2px;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Main card ──────────────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(15, 21, 39, 0.75);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-2xl);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 24px 28px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 24px 28px;
+    }
+
+    /* ── Drop Zone ──────────────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed rgba(108, 92, 231, 0.3);
+      border-radius: var(--radius-xl);
+      background: rgba(108, 92, 231, 0.03);
+      padding: 48px 28px;
+      text-align: center;
+      cursor: pointer;
+      transition:
+        border-color var(--transition-base),
+        background var(--transition-base),
+        transform var(--transition-fast);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--brand-gradient);
+      opacity: 0;
+      transition: opacity var(--transition-base);
+      pointer-events: none;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: rgba(108, 92, 231, 0.7);
+      background: rgba(108, 92, 231, 0.07);
+      transform: scale(1.005);
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.drag-over::before {
+      opacity: 0.04;
+    }
+
+    .drop-zone.drag-over {
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.12), var(--shadow-glow);
+    }
+
+    .drop-icon {
+      width: 52px;
+      height: 52px;
+      background: rgba(108, 92, 231, 0.12);
+      border: 1px solid rgba(108, 92, 231, 0.25);
+      border-radius: var(--radius-lg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: var(--brand-light);
+      transition: transform var(--transition-spring), background var(--transition-base);
+    }
+
+    .drop-zone:hover .drop-icon,
+    .drop-zone.drag-over .drop-icon {
+      transform: scale(1.12) translateY(-2px);
+      background: rgba(108, 92, 231, 0.2);
+    }
+
+    .drop-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .drop-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .drop-hint {
+      margin-top: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: 99px;
+      padding: 4px 12px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .drop-hint span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+      display: inline-block;
+    }
+
+    /* Hidden real file input */
+    #file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ── File list ──────────────────────────────────────────────────── */
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      animation: slideIn 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-type-badge {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+
+    .ext-log  { background: rgba(234, 179, 8,  0.12); color: #eab308; }
+    .ext-xml  { background: rgba(0, 210, 255, 0.1);  color: #00d2ff; }
+    .ext-json { background: rgba(108, 92, 231, 0.12); color: #a29bfe; }
+    .ext-html { background: rgba(34, 197, 94, 0.1);  color: #22c55e; }
+    .ext-txt  { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+
+    .file-name {
+      flex: 1;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-size {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .file-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      transition: color var(--transition-fast), background var(--transition-fast);
+    }
+
+    .file-remove:hover {
+      color: var(--color-critical);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* ── Size progress bar ──────────────────────────────────────────── */
+    .size-tracker {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .size-bar-wrap {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .size-bar {
+      height: 100%;
+      background: var(--brand-gradient);
+      border-radius: 99px;
+      transition: width 300ms ease;
+    }
+
+    .size-bar.warn { background: linear-gradient(90deg, #f97316, #eab308); }
+    .size-bar.danger { background: linear-gradient(90deg, #ef4444, #f97316); }
+
+    .size-label {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Action strip ────────────────────────────────────────────────── */
+    .action-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition:
+        background var(--transition-fast),
+        transform var(--transition-fast),
+        box-shadow var(--transition-base),
+        opacity var(--transition-fast);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-primary {
+      background: var(--brand-gradient);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 24px rgba(108, 92, 231, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: rgba(255,255,255,0.09);
+      color: var(--text-primary);
+    }
+
+    .file-count-badge {
+      margin-left: auto;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Divider ─────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border-glass);
+      margin: 0 28px;
+    }
+
+    /* ── Status panel ────────────────────────────────────────────────── */
+    .status-panel {
+      padding: 24px 28px;
+      display: none;
+    }
+
+    .status-panel.visible { display: block; }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .status-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .status-icon.running {
+      background: rgba(108, 92, 231, 0.12);
+      color: var(--brand-light);
+      animation: pulseRing 2s ease-in-out infinite;
+    }
+
+    .status-icon.complete {
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--color-low);
+    }
+
+    .status-icon.failed {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--color-critical);
+    }
+
+    @keyframes pulseRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); }
+      50%       { box-shadow: 0 0 0 8px rgba(108, 92, 231, 0.12); }
+    }
+
+    .status-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .status-id {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ── Pipeline steps ──────────────────────────────────────────────── */
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 0;
+      position: relative;
+    }
+
+    .pipeline-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 38px;
+      width: 2px;
+      height: calc(100% - 26px);
+      background: var(--border-glass);
+    }
+
+    .pipeline-step.active:not(:last-child)::after,
+    .pipeline-step.done:not(:last-child)::after {
+      background: rgba(108, 92, 231, 0.3);
+    }
+
+    .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      position: relative;
+      z-index: 1;
+      transition: all var(--transition-base);
+    }
+
+    .pipeline-step.pending .step-dot {
+      border-color: var(--border-subtle);
+    }
+
+    .pipeline-step.active .step-dot {
+      border-color: var(--brand-light);
+      background: rgba(108, 92, 231, 0.15);
+      box-shadow: 0 0 12px rgba(108, 92, 231, 0.3);
+      animation: spinDot 1.2s linear infinite;
+    }
+
+    .pipeline-step.done .step-dot {
+      border-color: var(--color-low);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .pipeline-step.failed .step-dot {
+      border-color: var(--color-critical);
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    @keyframes spinDot {
+      0%   { box-shadow: 0 0 0 0 rgba(108,92,231,0.4); }
+      50%  { box-shadow: 0 0 0 6px rgba(108,92,231,0.05); }
+      100% { box-shadow: 0 0 0 0 rgba(108,92,231,0); }
+    }
+
+    .step-text {
+      flex: 1;
+    }
+
+    .step-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      transition: color var(--transition-base);
+    }
+
+    .pipeline-step.pending   .step-name { color: var(--text-muted); }
+    .pipeline-step.active    .step-name { color: var(--text-primary); }
+    .pipeline-step.done      .step-name { color: var(--color-low); }
+    .pipeline-step.failed    .step-name { color: var(--color-critical); }
+
+    .step-detail {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .pipeline-step.active .step-detail { color: var(--text-secondary); }
+
+    .step-time {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Error box ───────────────────────────────────────────────────── */
+    .error-box {
+      background: rgba(239, 68, 68, 0.07);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-top: 16px;
+      font-size: 0.8125rem;
+      color: #fca5a5;
+      display: none;
+    }
+
+    .error-box.visible { display: block; }
+
+    .error-box strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--color-critical);
+    }
+
+    /* ── Footer strip ────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .footer-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .dot-green { background: var(--color-low); }
+    .dot-purple { background: var(--brand-primary); }
+
+    /* ── Spinner (for the upload button loading state) ───────────────── */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-icon { display: none; }
+
+    /* ── Accessibility ───────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      #thragg-core::before, #thragg-core::after { display: none; }
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 560px) {
+      .card-body, .card-header, .status-panel { padding-left: 20px; padding-right: 20px; }
+      .divider { margin: 0 20px; }
+      .drop-zone { padding: 36px 20px; }
+      .action-strip { flex-wrap: wrap; }
+      .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- View 1: Upload (Landing) -->
+  <div class="view-container active" id="view-upload">
+
+  <div>
+    <!-- Brand / Header -->
+    <div class="brand">
+      <div class="brand-shield">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <span class="brand-name">THRAGG</span>
+      <span class="brand-version"><span style="width:5px;height:5px;border-radius:50%;background:var(--color-low);display:inline-block;"></span> v3.1</span>
+    </div>
+
+    <div class="page-subtitle">Threat Hunting · Recon · Automated Gap Analysis Gateway</div>
+
+    <!-- Main upload card -->
+    <div class="card" id="upload-card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Upload Evidence
+        </div>
+      </div>
+
+      <div class="card-body">
+        <input type="file" id="file-input" multiple
+               accept=".log,.xml,.json,.html,.txt"
+               aria-label="Choose evidence files" />
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone" role="button"
+             tabindex="0" aria-label="Drop files here or click to browse">
+          <div class="drop-icon" id="drop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-title">Drop evidence files here</div>
+          <div class="drop-subtitle">or <strong style="color:var(--brand-light);cursor:pointer;">click to browse</strong></div>
+          <div class="drop-hint">
+            <span></span>
+            .log &nbsp;·&nbsp; .xml &nbsp;·&nbsp; .json &nbsp;·&nbsp; .html &nbsp;·&nbsp; .txt
+            &nbsp;&nbsp;|&nbsp;&nbsp; 10 MB / file &nbsp;·&nbsp; 50 MB total
+          </div>
+        </div>
+
+        <!-- File list -->
+        <div class="file-list" id="file-list"></div>
+
+        <!-- Size tracker (shown after first file is added) -->
+        <div class="size-tracker" id="size-tracker" style="display:none;">
+          <div class="size-bar-wrap">
+            <div class="size-bar" id="size-bar" style="width:0%"></div>
+          </div>
+          <div class="size-label" id="size-label">0 / 50 MB</div>
+        </div>
+
+        <!-- Error message -->
+        <div class="error-box" id="error-box">
+          <strong id="error-title"></strong>
+          <span id="error-detail"></span>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-strip">
+          <button class="btn btn-primary" id="btn-analyze" disabled>
+            <span class="btn-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </span>
+            <div class="spinner"></div>
+            Start Analysis
+          </button>
+          <button class="btn btn-ghost" id="btn-clear" style="display:none;">
+            Clear all
+          </button>
+          <div class="file-count-badge" id="file-count"></div>
+        </div>
+      </div>
+
+      
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-item">
+        <div class="footer-dot dot-green"></div>
+        Offline — No internet required
+      </div>
+      <div class="footer-item">
+        <div class="footer-dot dot-purple"></div>
+        All data stays on your machine
+      </div>
+      <div class="footer-item">
+        <div class="footer-dot" style="background:var(--color-info)"></div>
+        Concurrent analyses: 2
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- View 2: Ingestion -->
+  <div class="view-container" id="view-ingestion">
+    <div id="thragg-core"></div>
+    <div style="margin-top:40px; font-weight:600; color:var(--brand-light); letter-spacing:0.1em; text-transform:uppercase;">Ingesting Evidence</div>
+  </div>
+
+  <!-- View 3: Analysis Chamber -->
+  <div class="view-container" id="view-chamber">
+    <div class="chamber-header">
+      <div class="chamber-title">Intelligence Analysis Chamber</div>
+      <div class="chamber-session" id="chamber-session-id"></div>
+    </div>
+    <div class="chamber-pipeline">
+      
+      <!-- Module Activation -->
+      <div class="module-nodes" id="module-nodes">
+        <div class="module-node" id="mod-logs"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg> Logs</div>
+        <div class="module-node" id="mod-network"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Network</div>
+        <div class="module-node" id="mod-identity"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Identity</div>
+        <div class="module-node" id="mod-cloud"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Cloud</div>
+        <div class="module-node" id="mod-web"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Web</div>
+      </div>
+      
+      <!-- Live Counters -->
+      <div class="live-counters">
+        <div class="counter-box">
+          <div class="counter-value" id="count-entities">0</div>
+          <div class="counter-label">Entities Extracted</div>
+        </div>
+        <div class="counter-box">
+          <div class="counter-value" id="count-relations">0</div>
+          <div class="counter-label">Relationships</div>
+        </div>
+      </div>
+
+      <div class="pipeline" id="chamber-pipeline">
+        <!-- Stages will be populated by JS -->
+      </div>
+      <div class="error-box" id="chamber-error-box" style="margin-top:24px;">
+        <strong>Analysis Failed</strong>
+        <span id="chamber-error-detail"></span>
+        <button class="btn btn-ghost" style="margin-top:12px; width:100%; justify-content:center;" onclick="window.location.reload()">Start Over</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion Overlay -->
+  <div id="completion-overlay">
+    <div id="big-core" style="width:120px; height:120px; border-radius:50%; background:var(--brand-gradient); box-shadow: 0 0 80px rgba(108, 92, 231, 0.8), 0 0 120px rgba(0, 210, 255, 0.5); position:relative; transition: transform 2s cubic-bezier(0.2,0,0,1);">
+      <div style="position:absolute; inset:-20px; border:1px dashed rgba(255,255,255,0.4); border-radius:50%; animation: spinRing 20s linear infinite;"></div>
+    </div>
+    <div class="completion-text">INTELLIGENCE READY</div>
+  </div>
+<script>
+    /* ================================================================
+       THRAGG UX — Hybrid Progress & Ingestion
+       ================================================================ */
+
+    const MAX_FILE_BYTES  = 10 * 1024 * 1024;
+    const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
+    const ALLOWED_EXTS    = new Set(['.log', '.xml', '.json', '.html', '.txt']);
+    const POLL_INTERVAL   = 2000;
+
+    let selectedFiles = [];
+    let pollTimer     = null;
+    let currentSessionId = null;
+
+    // DOM Elements
+    const dropZone       = document.getElementById('drop-zone');
+    const fileInput      = document.getElementById('file-input');
+    const fileList       = document.getElementById('file-list');
+    const sizeTracker    = document.getElementById('size-tracker');
+    const sizeBar        = document.getElementById('size-bar');
+    const sizeLabel      = document.getElementById('size-label');
+    const errorBox       = document.getElementById('error-box');
+    const errorTitle     = document.getElementById('error-title');
+    const errorDetail    = document.getElementById('error-detail');
+    const btnAnalyze     = document.getElementById('btn-analyze');
+    const btnClear       = document.getElementById('btn-clear');
+    const fileCount      = document.getElementById('file-count');
+
+    // Views
+    const viewUpload     = document.getElementById('view-upload');
+    const viewIngestion  = document.getElementById('view-ingestion');
+    const viewChamber    = document.getElementById('view-chamber');
+    const thraggCore     = document.getElementById('thragg-core');
+
+    // Chamber Elements
+    const chamberSessionId = document.getElementById('chamber-session-id');
+    const chamberPipeline  = document.getElementById('chamber-pipeline');
+    const chamberError     = document.getElementById('chamber-error-box');
+    const chamberErrorDet  = document.getElementById('chamber-error-detail');
+
+    // The 9 Conceptual Stages mapping
+    const PIPELINE_STAGES = [
+      { id: 'st-intake', name: 'Evidence Intake', desc: 'Receiving and validating files', trigger: 'UPLOADING' },
+      { id: 'st-module', name: 'Module Execution', desc: 'Parsing evidence with specific modules', trigger: 'ANALYZING_1', onActive: () => activateModules() },
+      { id: 'st-entity', name: 'Entity Resolution', desc: 'Extracting and normalizing entities', trigger: 'ANALYZING_2' },
+      { id: 'st-rel',    name: 'Relationship Mapping', desc: 'Connecting entities', trigger: 'ANALYZING_3' },
+      { id: 'st-corr',   name: 'Correlation Engine', desc: 'Finding cross-module correlations', trigger: 'ANALYZING_4' },
+      { id: 'st-chain',  name: 'Attack Chain Discovery', desc: 'Building attack narratives', trigger: 'ANALYZING_5' },
+      { id: 'st-risk',   name: 'Risk Assessment', desc: 'Scoring risks and mapping MITRE', trigger: 'ANALYZING_6' },
+      { id: 'st-report', name: 'Executive Report Generation', desc: 'Compiling offline intelligence', trigger: 'GENERATING_REPORTS' },
+      { id: 'st-dash',   name: 'Dashboard Preparation', desc: 'Finalizing JSON outputs', trigger: 'COMPLETE' }
+    ];
+
+    // Counters logic
+    let entitiesCount = 0;
+    let relationsCount = 0;
+    let counterInterval = null;
+    const elCountEntities = document.getElementById('count-entities');
+    const elCountRelations = document.getElementById('count-relations');
+
+    function startLiveCounters() {
+      if (counterInterval) return;
+      counterInterval = setInterval(() => {
+        // Pseudo-random upward tick for conceptual storytelling
+        if (Math.random() > 0.3) {
+          entitiesCount += Math.floor(Math.random() * 5);
+          elCountEntities.textContent = entitiesCount;
+        }
+        if (Math.random() > 0.5) {
+          relationsCount += Math.floor(Math.random() * 3);
+          elCountRelations.textContent = relationsCount;
+        }
+      }, 300);
+    }
+    
+    function stopLiveCounters() {
+      if (counterInterval) clearInterval(counterInterval);
+    }
+
+    // Modules logic
+    let modulesActivated = false;
+    function activateModules() {
+      if (modulesActivated) return;
+      modulesActivated = true;
+      const nodes = ['mod-logs', 'mod-network', 'mod-identity', 'mod-cloud', 'mod-web'];
+      nodes.forEach((id, i) => {
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) el.className = 'module-node scanning';
+          setTimeout(() => {
+            if (el) el.className = 'module-node complete';
+          }, 3000 + (Math.random() * 2000)); // Finish scanning after a bit
+        }, i * 600); // Stagger start
+      });
+    }
+
+    // Build Pipeline DOM
+    function renderChamberPipeline() {
+      chamberPipeline.innerHTML = PIPELINE_STAGES.map((s, i) => `
+        <div class="pipeline-step pending" id="${s.id}">
+          <div class="step-dot">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </div>
+          <div class="step-text">
+            <div class="step-name">${i+1}. ${s.name}</div>
+            <div class="step-detail">${s.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    renderChamberPipeline();
+
+    // -- File Utilities --
+    function ext(filename) {
+      const dot = filename.lastIndexOf('.');
+      return dot >= 0 ? filename.slice(dot).toLowerCase() : '';
+    }
+    function extClass(extension) {
+      const map = { '.log': 'ext-log', '.xml': 'ext-xml', '.json': 'ext-json', '.html': 'ext-html', '.txt': 'ext-txt' };
+      return map[extension] || 'ext-txt';
+    }
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // -- Validation & File List --
+    function validateFiles(files) {
+      for (const f of files) {
+        const e = ext(f.name);
+        if (!ALLOWED_EXTS.has(e)) return `"${f.name}" is not supported.`;
+        if (f.size > MAX_FILE_BYTES) return `"${f.name}" exceeds 10 MB.`;
+      }
+      return null;
+    }
+    function renderFileList() {
+      fileList.innerHTML = '';
+      let total = 0;
+      selectedFiles.forEach((f, i) => {
+        total += f.size;
+        const e = ext(f.name);
+        fileList.insertAdjacentHTML('beforeend', `
+          <div class="file-item" id="file-item-${i}">
+            <span class="file-type-badge ${extClass(e)}">${e.replace('.', '')}</span>
+            <span class="file-name" title="${f.name}">${f.name}</span>
+            <span class="file-size">${formatBytes(f.size)}</span>
+            <button class="file-remove" data-index="${i}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        `);
+      });
+      if (selectedFiles.length > 0) {
+        const pct = Math.min(100, (total / MAX_TOTAL_BYTES) * 100);
+        sizeTracker.style.display = 'flex';
+        sizeBar.style.width = pct + '%';
+        sizeBar.className = 'size-bar' + (pct > 90 ? ' danger' : pct > 70 ? ' warn' : '');
+        sizeLabel.textContent = formatBytes(total) + ' / 50 MB';
+      } else {
+        sizeTracker.style.display = 'none';
+      }
+      fileCount.textContent = selectedFiles.length ? `${selectedFiles.length} file(s)` : '';
+      btnAnalyze.disabled = selectedFiles.length === 0;
+      btnClear.style.display = selectedFiles.length > 0 ? '' : 'none';
+      hideError();
+    }
+    function addFiles(files) {
+      const incoming = Array.from(files);
+      const err = validateFiles(incoming);
+      if (err) { showError('Validation Error', err); return; }
+      const existing = new Set(selectedFiles.map(f => f.name));
+      const newFiles = incoming.filter(f => !existing.has(f.name));
+      const merged = [...selectedFiles, ...newFiles];
+      const total = merged.reduce((s, f) => s + f.size, 0);
+      if (total > MAX_TOTAL_BYTES) { showError('Size Exceeded', `Total size > 50 MB`); return; }
+      selectedFiles = merged;
+      renderFileList();
+    }
+    fileList.addEventListener('click', e => {
+      const btn = e.target.closest('.file-remove');
+      if (!btn) return;
+      selectedFiles.splice(parseInt(btn.dataset.index, 10), 1);
+      renderFileList();
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => { if(fileInput.files.length) addFiles(fileInput.files); fileInput.value = ''; });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+    btnClear.addEventListener('click', () => { selectedFiles = []; renderFileList(); });
+
+    function showError(title, detail) { errorTitle.textContent = title; errorDetail.textContent = detail; errorBox.classList.add('visible'); }
+    function hideError() { errorBox.classList.remove('visible'); }
+
+    // -- Animation & Transition --
+    async function playIngestionAnimation() {
+      return new Promise(resolve => {
+        const fileElements = Array.from(document.querySelectorAll('.file-item'));
+        if (fileElements.length === 0) return resolve();
+
+        // 1. Batch ALL DOM reads (prevent layout thrashing)
+        const coreRect = thraggCore.getBoundingClientRect();
+        const coreX = coreRect.left + coreRect.width / 2;
+        const coreY = coreRect.top + coreRect.height / 2;
+        const fileRects = fileElements.map(el => el.getBoundingClientRect());
+
+        // 2. Batch ALL DOM writes
+        const clones = [];
+        fileElements.forEach((el, index) => {
+          const rect = fileRects[index];
+          const clone = el.cloneNode(true);
+          clone.className = 'flying-file';
+          const e = ext(selectedFiles[index].name);
+          clone.innerHTML = `
+            <span class="file-type-badge ${extClass(e)}">${e.replace('.', '')}</span>
+            <span class="file-name">${selectedFiles[index].name}</span>
+          `;
+          clone.style.top = rect.top + 'px';
+          clone.style.left = rect.left + 'px';
+          clone.style.width = rect.width + 'px';
+          document.body.appendChild(clone);
+          clones.push(clone);
+        });
+
+        viewUpload.classList.remove('active');
+        viewIngestion.classList.add('active');
+
+        // 3. Animate each clone to center, shrink, become light, and merge
+        let coreScale = 1.0;
+
+        clones.forEach((clone, i) => {
+          setTimeout(() => {
+            // Use cached rect for animation math (no DOM read)
+            const rect = fileRects[i];
+            const startX = rect.left + rect.width / 2;
+            const startY = rect.top + rect.height / 2;
+            const tx = coreX - startX;
+            const ty = coreY - startY;
+
+            // Lift slightly, then move and become light beam
+            clone.style.transform = `translateY(-20px) scale(1.05)`;
+            
+            setTimeout(() => {
+              clone.classList.add('to-light');
+              clone.style.transform = `translate(${tx}px, ${ty}px) scale(0.1)`;
+              clone.style.opacity = '0';
+              
+              // When it hits the core, pulse the core and increase its glow/size
+              setTimeout(() => {
+                coreScale += 0.05;
+                thraggCore.style.transform = `scale(${coreScale})`;
+                thraggCore.classList.add('pulse');
+                setTimeout(() => thraggCore.classList.remove('pulse'), 300);
+              }, 700);
+
+              if (i === clones.length - 1) {
+                setTimeout(() => {
+                  clones.forEach(c => c.remove());
+                  resolve();
+                }, 900); // Wait for last file animation to finish
+              }
+            }, 150); // Small delay after lifting
+          }, i * 250); // Stagger entry (shortened to 250ms from 400ms for smoother flow)
+        });
+      });
+    }
+
+    btnAnalyze.addEventListener('click', async () => {
+      if (selectedFiles.length === 0) return;
+      hideError();
+      btnAnalyze.classList.add('loading');
+      btnAnalyze.disabled = true;
+      btnClear.disabled = true;
+
+      const form = new FormData();
+      selectedFiles.forEach(f => form.append('files', f));
+
+      let sessionId;
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || 'Upload failed');
+        sessionId = data.session_id;
+        
+        const analyzeRes = await fetch(`/api/analyze/${sessionId}`, { method: 'POST' });
+        if (!analyzeRes.ok) throw new Error('Analysis trigger failed');
+      } catch (err) {
+        showError('Error', err.message);
+        btnAnalyze.classList.remove('loading');
+        btnAnalyze.disabled = false;
+        btnClear.disabled = false;
+        return;
+      }
+
+      currentSessionId = sessionId;
+      chamberSessionId.textContent = 'Session: ' + sessionId;
+
+      // Play Animation
+      await playIngestionAnimation();
+
+      // Switch to Chamber
+      viewIngestion.classList.remove('active');
+      viewChamber.classList.add('active');
+
+      // Start hybrid progress polling
+      startPolling(sessionId);
+    });
+
+    // -- Hybrid Progress Logic --
+    let analyzingSimTimer = null;
+    let analyzingStage = 1; // Tracks 1 to 6 inside ANALYZING (indices 1 to 6 in PIPELINE_STAGES)
+
+    function updatePipelineUI(targetStageIndex, isFailed=false) {
+      PIPELINE_STAGES.forEach((s, i) => {
+        const el = document.getElementById(s.id);
+        if (!el) return;
+        
+        if (isFailed) {
+          el.className = 'pipeline-step ' + (i < targetStageIndex ? 'done' : i === targetStageIndex ? 'failed' : 'pending');
+        } else {
+          if (i < targetStageIndex) el.className = 'pipeline-step done';
+          else if (i === targetStageIndex) el.className = 'pipeline-step active';
+          else el.className = 'pipeline-step pending';
+        }
+
+        const dot = el.querySelector('.step-dot');
+        if (i < targetStageIndex || (!isFailed && i === PIPELINE_STAGES.length - 1 && targetStageIndex === PIPELINE_STAGES.length - 1)) {
+          dot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+        } else if (isFailed && i === targetStageIndex) {
+          dot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        } else {
+           dot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="2"/></svg>`;
+        }
+        
+        // Trigger onActive for current or past stages
+        if (i <= targetStageIndex && s.onActive && !s._activated) {
+          s.onActive();
+          s._activated = true;
+        }
+      });
+      
+      if (targetStageIndex > 0 && targetStageIndex < 8 && !counterInterval) {
+        startLiveCounters();
+      }
+    }
+
+    function handleAnalyzingSimulation() {
+      if (!analyzingSimTimer) {
+        analyzingSimTimer = setInterval(() => {
+          if (analyzingStage < 6) {
+            analyzingStage++;
+            updatePipelineUI(analyzingStage);
+          }
+        }, 1500); // Conceptually advance a stage every 1.5s
+      }
+    }
+
+    function startPolling(sessionId) {
+      updatePipelineUI(0); // Intake
+      pollTimer = setInterval(() => poll(sessionId), POLL_INTERVAL);
+    }
+
+    async function poll(sessionId) {
+      let data;
+      try {
+        const res = await fetch(`/api/status/${sessionId}`);
+        if (!res.ok) return;
+        data = await res.json();
+      } catch { return; }
+
+      const state = data.status;
+      
+      if (state === 'QUEUED' || state === 'UPLOADING') {
+        updatePipelineUI(0);
+      } else if (state === 'ANALYZING') {
+        updatePipelineUI(analyzingStage);
+        handleAnalyzingSimulation();
+      } else if (state === 'GENERATING_REPORTS') {
+        if (analyzingSimTimer) { clearInterval(analyzingSimTimer); analyzingSimTimer = null; }
+        updatePipelineUI(7); // Jump to report gen
+      } else if (state === 'COMPLETE') {
+        clearInterval(pollTimer);
+        if (analyzingSimTimer) clearInterval(analyzingSimTimer);
+        stopLiveCounters();
+        updatePipelineUI(8);
+        
+        setTimeout(() => {
+          viewChamber.classList.add('transitioning');
+          const overlay = document.getElementById('completion-overlay');
+          overlay.classList.add('active');
+          
+          setTimeout(() => {
+            document.getElementById('big-core').style.transform = 'scale(2.5)';
+          }, 100);
+          
+          setTimeout(() => {
+            window.location.href = `/dashboard/${sessionId}`;
+          }, 1800);
+        }, 600);
+      } else if (state === 'FAILED') {
+        clearInterval(pollTimer);
+        if (analyzingSimTimer) clearInterval(analyzingSimTimer);
+        
+        let errStage = 0;
+        if (analyzingStage > 1 && analyzingStage <= 6) errStage = analyzingStage;
+        else errStage = PIPELINE_STAGES.findIndex(s => s.trigger === state);
+        if (errStage === -1) errStage = analyzingStage;
+
+        updatePipelineUI(errStage, true);
+        chamberErrorDet.textContent = data.error_detail || 'Unknown error occurred.';
+        chamberError.classList.add('visible');
+      }
+    }
+</script>
+</body>
+</html>

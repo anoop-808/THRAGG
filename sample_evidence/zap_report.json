@@ -1,0 +1,23 @@
+{
+  "@version": "2.11.1",
+  "@generated": "2023-01-01T12:00:00Z",
+  "site": [
+    {
+      "@name": "http://localhost:8080",
+      "@host": "localhost",
+      "@port": "8080",
+      "alerts": [
+        {
+          "alert": "Cross Site Scripting",
+          "riskcode": "3",
+          "confidence": "2",
+          "riskdesc": "High (Medium)",
+          "desc": "XSS vulnerability found in search parameter.",
+          "solution": "Escape user input before rendering.",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "cweid": "79"
+        }
+      ]
+    }
+  ]
+}

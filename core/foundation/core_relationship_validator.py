@@ -145,6 +145,7 @@ VALID_COMBINATIONS: frozenset[
         (EntityType.SERVICE,     RelationshipType.DEPENDS_ON, EntityType.SERVICE),
         (EntityType.HOST,        RelationshipType.RELATED_TO, EntityType.CLOUD_RESOURCE),
         (EntityType.IDENTITY,    RelationshipType.RELATED_TO, EntityType.CLOUD_RESOURCE),
+        (EntityType.IDENTITY,    RelationshipType.RELATED_TO, EntityType.IDENTITY),
 
         # ── OWNS: ownership or administrative control ──────────────────────
         (EntityType.USER,          RelationshipType.OWNS, EntityType.CLOUD_RESOURCE),

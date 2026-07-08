@@ -14,7 +14,7 @@ Design constraints
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+
 
 from .section import ContentType
 from .report import ReportType
@@ -55,7 +55,7 @@ TEMPLATES: dict[ReportType, list[SectionTemplate]] = {
         SectionTemplate("tech-risks",       "Risk Assessments",        3,  ContentType.TABLE),
         SectionTemplate("tech-mitre",       "MITRE ATT&CK Coverage",   4,  ContentType.TABLE),
         SectionTemplate("tech-findings",    "Finding Statistics",      5,  ContentType.STATISTICS),
-        SectionTemplate("tech-recs",        "Technical Recommendations",6, ContentType.RECOMMENDATION),
+        SectionTemplate("tech-recs",        "Technical Recommendations", 6, ContentType.RECOMMENDATION),
         SectionTemplate("tech-trace",       "Traceability Appendix",   7,  ContentType.TRACEABILITY),
     ],
 
@@ -94,7 +94,7 @@ TEMPLATES: dict[ReportType, list[SectionTemplate]] = {
         SectionTemplate("comp-scope",       "Assessment Scope",        1,  ContentType.SUMMARY),
         SectionTemplate("comp-mitre",       "MITRE ATT&CK Coverage",   2,  ContentType.TABLE),
         SectionTemplate("comp-risks",       "Risk Summary",            3,  ContentType.TABLE),
-        SectionTemplate("comp-recs",        "Governance Recommendations",4,ContentType.RECOMMENDATION),
+        SectionTemplate("comp-recs",        "Governance Recommendations", 4, ContentType.RECOMMENDATION),
         SectionTemplate("comp-trace",       "Traceability Appendix",   5,  ContentType.TRACEABILITY),
     ],
 }

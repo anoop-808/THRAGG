@@ -5,9 +5,7 @@ from thragg.core.executive.executive_assessment import ExecutiveAssessment
 from thragg.core.foundation.finding import Confidence, Severity
 from thragg.core.executive.framework_snapshot import FrameworkSnapshot
 from thragg.core.executive.framework_statistics import CountMetric, FrameworkStatistics
-from thragg.core.reporting.html_renderer import HtmlRenderer
-from thragg.core.reporting.json_renderer import JsonRenderer
-from thragg.core.reporting.markdown_renderer import MarkdownRenderer
+from thragg.core.reporting.renderers import HTMLRenderer, JSONRenderer, MarkdownRenderer
 from thragg.core.executive.observation import Observation, ObservationCategory
 from thragg.core.reporting.report_engine import ReportEngine
 from thragg.core.risk.risk_level import RiskLevel
@@ -91,8 +89,8 @@ def test_renderers_return_text_without_creating_intelligence():
     snapshot = _snapshot()
 
     markdown = MarkdownRenderer().render(assessment, snapshot)
-    data = json.loads(JsonRenderer().render(assessment, snapshot))
-    html = HtmlRenderer().render(assessment, snapshot)
+    data = json.loads(JSONRenderer().render(assessment, snapshot))
+    html = HTMLRenderer().render(assessment, snapshot)
 
     assert "# THRAGG Executive Assessment" in markdown
     assert "- **HIGH** Public access creates" in markdown
@@ -101,8 +99,8 @@ def test_renderers_return_text_without_creating_intelligence():
     assert "<!doctype html>" in html
     assert "Security Posture" in html
     assert MarkdownRenderer.content_type == "text/markdown"
-    assert HtmlRenderer.content_type == "text/html"
-    assert JsonRenderer.content_type == "application/json"
+    assert HTMLRenderer.content_type == "text/html"
+    assert JSONRenderer.content_type == "application/json"
 
 
 def test_report_engine_registers_and_runs_every_renderer(tmp_path):
@@ -130,7 +128,7 @@ def test_report_engine_registers_and_runs_every_renderer(tmp_path):
 
 
 def test_report_engine_creates_manifest_package_and_reports(tmp_path):
-    engine = ReportEngine((MarkdownRenderer(), JsonRenderer(), HtmlRenderer()))
+    engine = ReportEngine((MarkdownRenderer(), JSONRenderer(), HTMLRenderer()))
 
     package = engine.publish(
         _assessment(),
@@ -161,7 +159,7 @@ def test_report_engine_creates_manifest_package_and_reports(tmp_path):
 
 
 def test_report_engine_outputs_are_stable(tmp_path):
-    engine = ReportEngine((MarkdownRenderer(), JsonRenderer(), HtmlRenderer()))
+    engine = ReportEngine((MarkdownRenderer(), JSONRenderer(), HTMLRenderer()))
     kwargs = dict(
         executive_assessment=_assessment(),
         framework_snapshot=_snapshot(),

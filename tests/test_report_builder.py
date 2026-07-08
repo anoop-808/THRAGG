@@ -1,6 +1,6 @@
 import json
 
-from report_builder import ReportBuilder
+from app_report_builder import ReportBuilder
 from thragg.core.attack_chain.attack_chain import AttackChain
 from thragg.core.attack_chain.chain_edge import ChainEdge
 from thragg.core.correlation.correlation import Correlation

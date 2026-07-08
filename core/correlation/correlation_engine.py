@@ -94,10 +94,12 @@ class CorrelationEngine:
             source_module = str(
                 metadata.get("module") or metadata.get("tool") or "unknown"
             )
-            for raw in contract["details"].get("findings", []):
-                finding = CorrelationEngine._coerce_finding(raw, source_module)
-                if finding is not None:
-                    findings.append(finding)
+            for category_list in contract["details"].values():
+                if isinstance(category_list, list):
+                    for raw in category_list:
+                        finding = CorrelationEngine._coerce_finding(raw, source_module)
+                        if finding is not None:
+                            findings.append(finding)
         return tuple(findings)
 
     @staticmethod
@@ -134,6 +136,15 @@ class CorrelationEngine:
                 "or Finding objects"
             )
         evidence = dict(raw.get("evidence") or {})
+        if raw.get("subscription_id"):
+            raw["asset"] = raw.get("subscription_id")
+            raw["entity_type"] = "CLOUD_RESOURCE"
+            evidence["subscription"] = raw.get("subscription_id")
+            user_name = raw.get("raw", {}).get("user", {}).get("name")
+            if user_name:
+                evidence["upn"] = user_name
+                evidence["username"] = user_name
+
         for key in (
             "asset",
             "host",
@@ -191,6 +202,8 @@ class CorrelationEngine:
                 return EntityType(str(raw["entity_type"]).upper())
             except ValueError:
                 return EntityType.UNKNOWN
+        if evidence.get("upn") or evidence.get("object_id"):
+            return EntityType.IDENTITY
         if raw.get("asset") or evidence.get("ip") or evidence.get("ip_address"):
             return EntityType.HOST
         if evidence.get("user") or evidence.get("username"):

@@ -38,7 +38,7 @@ from core.attack_chain import AttackChainEngine
 from core.correlation import CorrelationEngine, RuleRegistry
 from core.dashboard import DashboardGenerator
 from core.executive import ExecutiveAssessmentBuilder, FrameworkSnapshot
-from core.reporting import HtmlRenderer, JsonRenderer, MarkdownRenderer, ReportEngine, ReportType
+from core.reporting import HTMLRenderer, JSONRenderer, MarkdownRenderer, ReportEngine, ReportType
 from core.risk import (
     ChainLengthFactor,
     ConfidenceFactor,
@@ -84,7 +84,7 @@ def _is_identity_json(name: str) -> bool:
     lower = name.lower()
     return name.endswith(".json") and any(
         kw in lower for kw in ("user", "group", "application", "service", "principal",
-                                "entra", "azure_ad", "identity")
+                               "entra", "azure_ad", "identity")
     )
 
 
@@ -92,7 +92,7 @@ def _is_cloud_json(name: str) -> bool:
     lower = name.lower()
     return name.endswith(".json") and any(
         kw in lower for kw in ("vm", "storage", "nsg", "vnet", "vault", "subscription",
-                                "cloud", "resource")
+                               "cloud", "resource")
     )
 
 
@@ -191,15 +191,10 @@ DEFAULT_MODULE_REGISTRY = ModuleRegistry(
     )
 )
 
-DISPATCH_TABLE: list[tuple] = [
-    (registration.predicate, registration.module_name)
-    for registration in DEFAULT_MODULE_REGISTRY._registrations
-]
-
-
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ModuleResult:
@@ -375,14 +370,14 @@ class ModuleRunner:
             return result
 
         # Extract standard contract fields
-        result.metadata  = raw.get("metadata",  {})
-        result.summary   = raw.get("summary",   {})
-        result.details   = raw.get("details",   {})
+        result.metadata = raw.get("metadata",  {})
+        result.summary = raw.get("summary",   {})
+        result.details = raw.get("details",   {})
         result.artifacts = raw.get("artifacts", {})
-        result.errors    = raw.get("errors",    [])
-        result.warnings  = result.metadata.get("warnings", [])
+        result.errors = raw.get("errors",    [])
+        result.warnings = result.metadata.get("warnings", [])
         result.warnings += [e for e in result.errors if _is_warning(e)]
-        result.errors    = [e for e in result.errors if not _is_warning(e)]
+        result.errors = [e for e in result.errors if not _is_warning(e)]
 
         # Check for failure indicators
         module_status = result.metadata.get("status", "")
@@ -480,12 +475,12 @@ class ResultMerger:
             A populated UnifiedReport.
         """
         report = UnifiedReport()
-        report.metadata   = self._build_metadata(results, input_folder, start_time)
-        report.modules    = self._build_modules_section(results)
-        report.summary    = self._build_summary(results)
-        report.details    = self._build_details(results)
-        report.artifacts  = self._build_artifacts(results)
-        report.errors     = self._collect_errors(results)
+        report.metadata = self._build_metadata(results, input_folder, start_time)
+        report.modules = self._build_modules_section(results)
+        report.summary = self._build_summary(results)
+        report.details = self._build_details(results)
+        report.artifacts = self._build_artifacts(results)
+        report.errors = self._collect_errors(results)
         return report
 
     # -- metadata ------------------------------------------------------------
@@ -497,7 +492,7 @@ class ResultMerger:
         start_time: float,
     ) -> dict:
         executed = [r.module_name for r in results]
-        failed   = [r.module_name for r in results if not r.success]
+        failed = [r.module_name for r in results if not r.success]
         completed = [r.module_name for r in results if r.success and not r.warnings]
         completed_with_warnings = [
             r.module_name for r in results if r.success and r.warnings
@@ -577,8 +572,8 @@ class ResultMerger:
         details: dict[str, Any] = {}
         for r in results:
             module_key = r.module_name.split(".")[-1]
-            file_key   = os.path.basename(r.file_path)
-            entry_key  = f"{module_key}::{file_key}"
+            file_key = os.path.basename(r.file_path)
+            entry_key = f"{module_key}::{file_key}"
 
             # details from the module already contains findings in their
             # categorized structure (users, groups, compute, storage, etc.)
@@ -594,8 +589,8 @@ class ResultMerger:
         artifacts: dict[str, Any] = {}
         for r in results:
             module_key = r.module_name.split(".")[-1]
-            file_key   = os.path.basename(r.file_path)
-            entry_key  = f"{module_key}::{file_key}"
+            file_key = os.path.basename(r.file_path)
+            entry_key = f"{module_key}::{file_key}"
             artifacts[entry_key] = r.artifacts
         return artifacts
 
@@ -630,6 +625,10 @@ class ReportWriter:
 
     OUTPUT_DIR = DEFAULT_REPORT_OUTPUT_DIR
 
+    def __init__(self, output_dir: str | None = None) -> None:
+        if output_dir is not None:
+            self.OUTPUT_DIR = output_dir
+
     def write(self, report: UnifiedReport) -> str:
         """Serialise *report* to a timestamped JSON file.
 
@@ -641,8 +640,8 @@ class ReportWriter:
         """
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         timestamp = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
-        filename  = f"thragg_report_{timestamp}.json"
-        out_path  = os.path.join(self.OUTPUT_DIR, filename)
+        filename = f"thragg_report_{timestamp}.json"
+        out_path = os.path.join(self.OUTPUT_DIR, filename)
 
         with open(out_path, "w", encoding="utf-8") as fh:
             json.dump(report.to_dict(), fh, indent=2, default=str)
@@ -667,19 +666,21 @@ class THRAGGOrchestrator:
         print(report)
     """
 
-    def __init__(self) -> None:
-        self._discovery   = FileDiscovery()
-        self._dispatcher  = ModuleDispatcher()
-        self._runner      = ModuleRunner()
-        self._merger      = ResultMerger()
-        self._writer      = ReportWriter()
+    def __init__(self, output_dir: str | None = None) -> None:
+        _output_dir = str(output_dir) if output_dir is not None else DEFAULT_REPORT_OUTPUT_DIR
+        self._output_dir: str = _output_dir
+        self._discovery = FileDiscovery()
+        self._dispatcher = ModuleDispatcher()
+        self._runner = ModuleRunner()
+        self._merger = ResultMerger()
+        self._writer = ReportWriter(output_dir=_output_dir)
         self._correlation = CorrelationEngine(RuleRegistry().get_rules())
         self._attack_chain = AttackChainEngine()
         self._risk = RiskEngine()
         self._executive = ExecutiveAssessmentBuilder()
         self._dashboard = DashboardGenerator()
         self._reporting = ReportEngine(
-            (MarkdownRenderer(), JsonRenderer(), HtmlRenderer())
+            (MarkdownRenderer(), JSONRenderer(), HTMLRenderer())
         )
 
     def run(self, input_folder: str) -> dict:
@@ -696,11 +697,11 @@ class THRAGGOrchestrator:
         start_time = time.time()
 
         with logged_operation(LOGGER, "orchestrator pipeline"):
-            files   = self._discover(input_folder)
+            files = self._discover(input_folder)
             results = self._dispatch_and_run(files)
-            report  = self._merger.merge(results, input_folder, start_time)
+            report = self._merger.merge(results, input_folder, start_time)
             self._run_intelligence(report, results)
-            out     = self._writer.write(report)
+            out = self._writer.write(report)
 
         report.artifacts["thragg_report"] = out
         return report.to_dict()
@@ -778,12 +779,13 @@ class THRAGGOrchestrator:
         package = self._reporting.publish(
             executive,
             snapshot,
-            os.path.join(DEFAULT_REPORT_OUTPUT_DIR, "evidence_package"),
+            os.path.join(self._output_dir, "evidence_package"),
             generated_at,
         )
         dashboard = self._dashboard.generate(
-            report_model,
-            os.path.join(DEFAULT_REPORT_OUTPUT_DIR, "dashboard.html"),
+            executive,
+            snapshot,
+            os.path.join(self._output_dir, "dashboard.html"),
             relationships=relationships,
             resolved_entities=resolved,
             findings=(),
@@ -820,7 +822,10 @@ def _default_risk_policy() -> ScoringPolicy:
 
 
 def _finding_count(contracts: tuple[dict[str, Any], ...]) -> int:
-    return sum(len(contract["details"].get("findings", ())) for contract in contracts)
+    return sum(
+        len(lst) for contract in contracts 
+        for lst in contract["details"].values() if isinstance(lst, list)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -839,7 +844,7 @@ def main() -> None:
     print(f"[THRAGG] Starting pipeline on: {folder}")
 
     orchestrator = THRAGGOrchestrator()
-    report       = orchestrator.run(folder)
+    report = orchestrator.run(folder)
 
     print("\n[THRAGG] Pipeline complete.")
     print(f"  Files analyzed : {report['metadata']['files_analyzed']}")

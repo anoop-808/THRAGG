@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 
 from thragg.core.attack_chain.attack_chain import AttackChain
 from thragg.core.attack_chain.chain_edge import ChainEdge
@@ -205,6 +206,21 @@ def _embedded_json(html: str) -> dict:
     return json.loads(match.group(1))
 
 
+def _embedded_json_text(html: str) -> str:
+    match = re.search(
+        r'<script id="thragg-dashboard-data" type="application/json">(.*?)</script>',
+        html,
+    )
+    assert match
+    return match.group(1)
+
+
+def _bootstrap_script(html: str) -> str:
+    match = re.search(r"<script>\s*(try \{.*?window\.THRAGG_DATA.*?)</script>", html, re.S)
+    assert match
+    return match.group(1)
+
+
 def test_dashboard_generator_writes_self_contained_html_and_bundle(tmp_path):
     output = tmp_path / "dashboard.html"
     bundle = DashboardGenerator().generate(
@@ -228,14 +244,19 @@ def test_dashboard_generator_writes_self_contained_html_and_bundle(tmp_path):
         ("resolved_entities", "1"),
         ("relationships", "1"),
     )
-    assert "<!doctype html>" in html
+    assert "<!DOCTYPE html>" in html
     assert "React" not in html
     assert data["executive_assessment"]["id"] == "exec-1"
+    assert data["framework_snapshot"]["finding_count"] == 1
+    assert data["risk_assessments"][0]["id"] == "risk-1"
+    assert data["attack_chains"][0]["id"] == "chain-1"
+    assert data["correlations"][0]["id"] == "corr-1"
     assert data["relationships"][0]["id"] == "rel-1"
     assert data["findings"][0]["evidence"] == {"port": 22}
+    assert "report_model" not in data
 
 
-def test_dashboard_contains_all_views_and_explain_navigation(tmp_path):
+def test_dashboard_contains_all_views_and_payload_contract(tmp_path):
     output = tmp_path / "dashboard.html"
     DashboardGenerator().generate(
         _assessment(),
@@ -270,13 +291,7 @@ def test_dashboard_contains_all_views_and_explain_navigation(tmp_path):
         "Entity",
         "Finding",
     ]
-    assert 'data-explain="ExecutiveAssessment"' in html
-    assert 'link("AttackChain", object.attack_chain_id)' in html
-    assert 'link("Correlation", id)' in html
-    assert 'link("Relationship", id)' in html
-    assert 'link("ResolvedEntity", id)' in html
-    assert 'link("Entity", id)' in html
-    assert 'link("Finding", id)' in html
+    assert {"executive_assessment", "framework_snapshot", "risk_assessments"} <= data.keys()
 
 
 def test_dashboard_output_is_deterministic(tmp_path):
@@ -300,3 +315,83 @@ def test_dashboard_output_is_deterministic(tmp_path):
     assert first.id == second.id
     assert first.to_dict() == second.to_dict()
     assert first_html == output.read_text(encoding="utf-8")
+
+
+def test_dashboard_bootstrap_assigns_embedded_json_to_thragg_data(tmp_path):
+    output = tmp_path / "dashboard.html"
+    DashboardGenerator().generate(
+        _assessment(),
+        _snapshot(),
+        str(output),
+        relationships=(_relationship(),),
+        resolved_entities=(_resolved_entity(),),
+        entities=(_entity(),),
+        findings=(_finding(),),
+        generated_at="2026-07-04T00:00:00Z",
+    )
+
+    html = output.read_text(encoding="utf-8")
+    embedded_json = _embedded_json_text(html)
+    bootstrap = _bootstrap_script(html)
+    node_script = f"""
+global.window = {{}};
+global.document = {{
+  getElementById: () => ({{ textContent: process.argv[1] }}),
+  addEventListener: () => {{}}
+}};
+global.console = {{ warn: (...args) => {{ throw new Error(args.join(' ')); }} }};
+{bootstrap}
+if (!window.THRAGG_DATA || window.THRAGG_DATA.executive_assessment.id !== 'exec-1') {{
+  process.exit(1);
+}}
+"""
+
+    subprocess.run(["node", "-e", node_script, embedded_json], check=True)
+    assert "__THRAGG_DASHBOARD_DATA__" not in html
+
+
+def test_dashboard_handles_empty_data(tmp_path):
+    output = tmp_path / "empty_dashboard.html"
+    empty_snapshot = FrameworkSnapshot(
+        risk_assessments=(),
+        attack_chains=(),
+        correlations=(),
+        finding_count=0,
+        entity_count=0,
+        resolved_entity_count=0,
+        relationship_count=0,
+        snapshot_version="test",
+        generated_at="2026-07-04T00:00:00Z"
+    )
+    empty_assessment = ExecutiveAssessment(
+        id="empty-1",
+        summary="No risks.",
+        observations=(),
+        recommendations=(),
+        statistics=FrameworkStatistics(
+            total_findings=0, total_entities=0, total_relationships=0,
+            total_correlations=0, total_attack_chains=0, risk_counts=(),
+            top_entity_types=(), top_attack_stages=(), top_attack_categories=()
+        ),
+        security_posture=SecurityPosture.HEALTHY,
+        traceability=TraceabilityMap((),(),(),()),
+        engine_version="test",
+        generated_at="2026-07-04T00:00:00Z"
+    )
+    bundle = DashboardGenerator().generate(
+        empty_assessment,
+        empty_snapshot,
+        str(output),
+        relationships=(),
+        resolved_entities=(),
+        entities=(),
+        findings=(),
+        generated_at="2026-07-04T00:00:00Z"
+    )
+    
+    html = output.read_text(encoding="utf-8")
+    data = _embedded_json(html)
+    
+    assert data["framework_snapshot"]["finding_count"] == 0
+    assert data["attack_chains"] == []
+    assert bundle.html_file == str(output)

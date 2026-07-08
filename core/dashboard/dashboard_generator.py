@@ -85,6 +85,7 @@ class DashboardGenerator:
             self.template_path.read_text(encoding="utf-8").replace(
                 "__THRAGG_DASHBOARD_DATA__",
                 embedded_json,
+                1,
             ),
             encoding="utf-8",
         )

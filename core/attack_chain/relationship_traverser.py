@@ -123,6 +123,11 @@ class RelationshipTraverser:
             if attrs.get("public") is True or attrs.get("public_ip") is not None:
                 return "PUBLIC"
 
+        # Identities without MFA
+        if entity_type == "IDENTITY":
+            if attrs.get("no_mfa") is True:
+                return "EXPOSED"
+
         return None
 
     def _calculate_entry_confidence(self, entity: ResolvedEntity, exposure_type: str) -> float:
@@ -163,10 +168,13 @@ class RelationshipTraverser:
     def _traverse_from_entry(self, entry: EntryPoint) -> list[AttackPath]:
         """BFS traversal from an entry point to find attack paths."""
         paths = []
+        print(f"Finding paths from {entry.entity_id}")
         queue = deque([(entry.entity_id, (entry.entity_id,), (), 0)])
 
         while queue:
             current_id, entity_path, rel_path, depth = queue.popleft()
+            if len(queue) % 1000 == 0 and len(queue) > 0:
+                print(f"Traversal queue size: {len(queue)}, depth: {depth}")
 
             if depth >= self.max_path_length:
                 continue
@@ -177,9 +185,36 @@ class RelationshipTraverser:
                 if path and path.confidence > 0.3:
                     paths.append(path)
 
-            # Explore neighbors
+            # Explore neighbors (outgoing)
             for rel in self.graph.outgoing_edges(current_id):
                 target_id = rel.target_entity_id
+                if target_id in entity_path:
+                    continue  # Avoid cycles
+                
+                # Prevent massive graph explosion among identities: allow at most ONE such edge
+                if (
+                    rel.source_entity_id.startswith("resolved-identity-") 
+                    and target_id.startswith("resolved-identity-") 
+                    and rel.relationship_type.name == "RELATED_TO"
+                ):
+                    # Check if we ALREADY have an identity-to-identity edge in rel_path
+                    # By checking if the current_id was reached via such an edge.
+                    # Since this is outgoing, if the last edge was also identity-related-to-identity, we skip.
+                    if depth > 0:
+                        continue
+
+                queue.append((
+                    target_id,
+                    entity_path + (target_id,),
+                    rel_path + (rel.id,),
+                    depth + 1,
+                ))
+
+            # Explore neighbors (incoming) - ONLY traverse EXPOSES backwards to prevent explosion
+            for rel in self.graph.incoming_edges(current_id):
+                if rel.relationship_type.name != "EXPOSES":
+                    continue
+                target_id = rel.source_entity_id
                 if target_id in entity_path:
                     continue  # Avoid cycles
 

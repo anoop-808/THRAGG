@@ -5,22 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THRAGG Intelligence Dashboard</title>
 
-  <!-- Preconnect to Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Offline-first: system font stack via --font-sans in design-tokens.css -->
+  <!-- Inter / JetBrains Mono are loaded from system fonts when available.   -->
+  <!-- No external font requests are made. THRAGG is fully offline.           -->
 
   <!-- Design System -->
-  <link rel="stylesheet" href="css/design-tokens.css">
-  <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/typography.css">
-  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="/frontend/css/design-tokens.css">
+  <link rel="stylesheet" href="/frontend/css/reset.css">
+  <link rel="stylesheet" href="/frontend/css/typography.css">
+  <link rel="stylesheet" href="/frontend/css/animations.css">
 
   <!-- Layout & Components -->
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/intelligence-core.css">
-  <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="/frontend/css/layout.css">
+  <link rel="stylesheet" href="/frontend/css/components.css">
+  <link rel="stylesheet" href="/frontend/css/intelligence-core.css">
+  <link rel="stylesheet" href="/frontend/css/views.css">
 
   <meta name="description" content="THRAGG Cybersecurity Intelligence Dashboard — Threat Hunting Recon & Automated Gap Analysis Gateway">
   <meta name="theme-color" content="#070b14">
@@ -55,30 +54,30 @@
   </style>
 
   <!-- Mock dataset (replaced by backend JSON in next session) -->
-  <script src="js/data.js"></script>
+  <!-- <script src="js/data.js"></script> removed as data is now fetched from /api/results/<session_id> -->
 
   <!-- Utility helpers -->
-  <script src="js/utils/charts.js"></script>
-  <script src="js/utils/animations.js"></script>
+  <script src="/frontend/js/utils/charts.js"></script>
+  <script src="/frontend/js/utils/animations.js"></script>
 
   <!-- Components -->
-  <script src="js/components/Sidebar.js"></script>
-  <script src="js/components/TopNavigation.js"></script>
-  <script src="js/components/IntelligenceCore.js"></script>
-  <script src="js/components/AssessmentScope.js"></script>
-  <script src="js/components/KPICards.js"></script>
-  <script src="js/components/SecurityPosture.js"></script>
-  <script src="js/components/RiskDistribution.js"></script>
-  <script src="js/components/DomainCoverage.js"></script>
-  <script src="js/components/AttackChainExplorer.js"></script>
-  <script src="js/components/MITRECoverage.js"></script>
-  <script src="js/components/TraceabilityExplorer.js"></script>
-  <script src="js/components/KnowledgeGraph.js"></script>
-  <script src="js/components/Recommendations.js"></script>
-  <script src="js/components/ReportDownloads.js"></script>
-  <script src="js/components/ActivityTimeline.js"></script>
+  <script src="/frontend/js/components/Sidebar.js"></script>
+  <script src="/frontend/js/components/TopNavigation.js"></script>
+  <script src="/frontend/js/components/IntelligenceCore.js"></script>
+  <script src="/frontend/js/components/AssessmentScope.js"></script>
+  <script src="/frontend/js/components/KPICards.js"></script>
+  <script src="/frontend/js/components/SecurityPosture.js"></script>
+  <script src="/frontend/js/components/RiskDistribution.js"></script>
+  <script src="/frontend/js/components/DomainCoverage.js"></script>
+  <script src="/frontend/js/components/AttackChainExplorer.js"></script>
+  <script src="/frontend/js/components/MITRECoverage.js"></script>
+  <script src="/frontend/js/components/TraceabilityExplorer.js"></script>
+  <script src="/frontend/js/components/KnowledgeGraph.js"></script>
+  <script src="/frontend/js/components/Recommendations.js"></script>
+  <script src="/frontend/js/components/ReportDownloads.js"></script>
+  <script src="/frontend/js/components/ActivityTimeline.js"></script>
 
   <!-- Application -->
-  <script src="js/app.js"></script>
+  <script src="/frontend/js/app.js"></script>
 </body>
 </html>

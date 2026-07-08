@@ -90,7 +90,8 @@
   animation: fadeIn var(--transition-base) forwards;
 }
 
-.animate-fade-in-up {
+.animate-fade-in-up,
+.fade-in-up {
   animation: fadeInUp var(--transition-base) forwards;
 }
 
@@ -100,6 +101,15 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-in {
+  animation: fadeIn var(--transition-base) forwards;
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: fadeInUp var(--transition-base) forwards;
 }
 
 /* Staggered children */
@@ -156,3 +166,14 @@
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
 }
+
+/* ── Accessibility ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

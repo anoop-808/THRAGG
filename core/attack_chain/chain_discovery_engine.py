@@ -166,7 +166,7 @@ def stage_sort_key(correlation: Correlation) -> tuple[int, str, str]:
 
 def _entity_map(correlation: Correlation) -> dict[str, str]:
     return {
-        str(entity["id"]): str(entity.get("entity_type", "UNKNOWN"))
+        str(entity["id"]): str(entity.get("type", "UNKNOWN"))
         for entity in correlation.matched_entities
         if "id" in entity
     }

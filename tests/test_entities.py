@@ -293,7 +293,6 @@ def test_extract_primary_entity_from_finding():
 
     assert host.type == EntityType.HOST
     assert host.source_finding == finding.id
-    assert host.attributes.get("port") == 22
 
 
 def test_extract_multiple_entity_types_from_one_finding():

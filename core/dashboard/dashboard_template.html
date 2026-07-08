@@ -61,8 +61,9 @@
   <script>
     try {
       const embeddedData = document.getElementById('thragg-dashboard-data');
-      if (embeddedData && embeddedData.textContent && embeddedData.textContent !== '__THRAGG_DASHBOARD_DATA__') {
-        window.THRAGG_DATA = JSON.parse(embeddedData.textContent);
+      const embeddedJson = embeddedData ? embeddedData.textContent.trim() : '';
+      if (embeddedJson) {
+        window.THRAGG_DATA = JSON.parse(embeddedJson);
       }
     } catch (e) {
       console.warn('Failed to parse embedded dashboard data:', e);

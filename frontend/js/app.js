@@ -551,4 +551,36 @@ const THRAGG_App = {
 };
 
 /* ── Bootstrap on DOM ready ──────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => THRAGG_App.init());
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const parts = window.location.pathname.split('/');
+    const sessionId = parts[parts.length - 1];
+    if (!sessionId || sessionId === 'dashboard') {
+      throw new Error('No session ID found in URL.');
+    }
+
+    const res = await fetch(`/api/results/${sessionId}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load intelligence data (Status: ${res.status})`);
+    }
+
+    window.THRAGG_DATA = await res.json();
+    window.THRAGG_SESSION_ID = sessionId;
+    
+    // Add brief artificial delay to ensure the premium splash screen is seen briefly
+    setTimeout(() => {
+      THRAGG_App.init();
+    }, 800);
+  } catch (err) {
+    const splash = document.getElementById('loading-splash');
+    if (splash) {
+      splash.innerHTML = `
+        <div style="color:var(--color-critical); text-align:center;">
+          <h2 style="margin-bottom:12px;">Data Load Failed</h2>
+          <p>${err.message}</p>
+          <button style="margin-top:20px; padding:10px 20px; background:var(--brand-primary); border:none; border-radius:4px; color:white; cursor:pointer;" onclick="window.location.href='/'">Return to Upload</button>
+        </div>
+      `;
+    }
+  }
+});

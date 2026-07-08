@@ -59,6 +59,7 @@ class AttackChainEngine:
                 else {entity.id: entity for entity in entities}
             )
             for result in self.matcher.match_graph_paths(graph, entity_map, correlation_items):
+                print(f"Result: match={result.is_match()} entry={result.entry_point_match} mitre={result.mitre_sequence_match} entity={result.entity_coverage} finding={result.finding_coverage}")
                 if result.is_match() and self.validator.is_valid(result.candidate):
                     chain = self.builder.build(
                         result.candidate,

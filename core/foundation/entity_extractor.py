@@ -61,7 +61,12 @@ _EVIDENCE_ENTITY_MAP: dict[str, EntityType] = {
 # Evidence keys that describe an entity rather than identify one --
 # attached as attributes on whichever entity is extracted, never
 # turned into entities themselves.
-_DESCRIPTIVE_EVIDENCE_KEYS = {"port", "protocol"}
+_DESCRIPTIVE_EVIDENCE_KEYS = {
+    "public",
+    "sensitive_data",
+    "admin",
+    "no_mfa",
+}
 
 _HOST_IDENTIFIER_PRIORITY = {
     "ip": 0,
@@ -215,9 +220,32 @@ class EntityExtractor:
     def _descriptive_attributes(finding: Finding) -> dict[str, Any]:
         if not isinstance(finding.evidence, dict):
             return {}
-        return {
+            
+        attrs = {
             k: v for k, v in finding.evidence.items() if k in _DESCRIPTIVE_EVIDENCE_KEYS
         }
+        
+        # Infer missing attributes safely from available evidence
+        evidence = finding.evidence
+        
+        # Infer no_mfa if mfa_registered is explicitly False
+        if "mfa_registered" in evidence and evidence.get("mfa_registered") is False:
+            attrs["no_mfa"] = True
+            
+        # Infer admin and privileged from username or user_type
+        username = str(evidence.get("username", "")).lower()
+        upn = str(evidence.get("upn", "")).lower()
+        user_type = str(evidence.get("user_type", "")).lower()
+        
+        if "admin" in username or "admin" in upn or "admin" in user_type:
+            attrs["admin"] = True
+            attrs["privileged"] = True
+            
+        if "root" in username or "root" in upn:
+            attrs["admin"] = True
+            attrs["privileged"] = True
+            
+        return attrs
 
     @classmethod
     def _build(

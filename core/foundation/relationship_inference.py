@@ -83,6 +83,30 @@ def example_relationship_rules() -> tuple[RelationshipInferenceRule, ...]:
             (),
             Confidence.MEDIUM,
         ),
+        RelationshipInferenceRule(
+            "REL-IDENTITY-RELATED-TO-IDENTITY",
+            EntityType.IDENTITY,
+            RelationshipType.RELATED_TO,
+            EntityType.IDENTITY,
+            (),
+            Confidence.HIGH,
+        ),
+        RelationshipInferenceRule(
+            "REL-IDENTITY-RELATED-CLOUD",
+            EntityType.IDENTITY,
+            RelationshipType.RELATED_TO,
+            EntityType.CLOUD_RESOURCE,
+            (),
+            Confidence.HIGH,
+        ),
+        RelationshipInferenceRule(
+            "REL-CLOUD-RELATED-USER",
+            EntityType.CLOUD_RESOURCE,
+            RelationshipType.RELATED_TO,
+            EntityType.USER,
+            (),
+            Confidence.HIGH,
+        ),
     )
 
 
