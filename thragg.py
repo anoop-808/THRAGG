@@ -37,7 +37,7 @@ from typing import Any, Callable
 from core.attack_chain import AttackChainEngine
 from core.correlation import CorrelationEngine, RuleRegistry
 from core.dashboard import DashboardGenerator
-from core.executive import ExecutiveAssessmentBuilder, FrameworkSnapshot
+from core.executive import AssessmentScope, ExecutiveAssessmentBuilder, FrameworkSnapshot
 from core.reporting import HTMLRenderer, JSONRenderer, MarkdownRenderer, ReportEngine, ReportType
 from core.risk import (
     ChainLengthFactor,
@@ -761,7 +761,22 @@ class THRAGGOrchestrator:
             snapshot_version=FRAMEWORK_VERSION,
             generated_at=generated_at,
         )
-        executive = self._executive.build(snapshot, generated_at)
+
+        modules_run = tuple(r.module_name for r in results)
+        evidence_files = tuple(os.path.basename(r.file_path) for r in results)
+        assessment_scope = AssessmentScope(
+            modules_run=modules_run,
+            modules_skipped=(),
+            evidence_files=evidence_files,
+            assessment_limitations=(),
+            assessment_time=generated_at,
+        )
+
+        executive = self._executive.build(
+            snapshot=snapshot,
+            generated_at=generated_at,
+            assessment_scope=assessment_scope,
+        )
         report_model = self._reporting.generate(
             executive,
             ReportType.EXECUTIVE,
@@ -775,6 +790,17 @@ class THRAGGOrchestrator:
             "executive_assessment": executive.to_dict(),
             "report_model": report_model.to_dict(),
         }
+
+        # Persist flattened intelligence artifacts for the Web API.
+        # These were previously only passed to DashboardGenerator and lost.
+        report.details["findings"] = _flatten_findings(contracts)
+        report.details["entities"] = [_to_dict_safe(e) for e in resolved]
+        report.details["resolved_entities"] = [_to_dict_safe(e) for e in resolved]
+        report.details["relationships"] = [_to_dict_safe(r) for r in relationships]
+        report.details["correlations"] = [c.to_dict() for c in correlations]
+        report.details["attack_chains"] = [c.to_dict() for c in chains]
+        report.details["risk_assessments"] = [r.to_dict() for r in risks]
+        report.details["generated_at"] = generated_at
 
         package = self._reporting.publish(
             executive,
@@ -826,6 +852,43 @@ def _finding_count(contracts: tuple[dict[str, Any], ...]) -> int:
         len(lst) for contract in contracts 
         for lst in contract["details"].values() if isinstance(lst, list)
     )
+
+
+def _to_dict_safe(obj: Any) -> dict[str, Any]:
+    """Serialize an object to a plain dict for JSON persistence."""
+    if hasattr(obj, "to_dict"):
+        return obj.to_dict()
+    if isinstance(obj, dict):
+        return obj
+    return {"value": str(obj)}
+
+
+def _flatten_findings(contracts: tuple[dict[str, Any], ...]) -> list[dict[str, Any]]:
+    """Flatten every module finding into a single list with traceability metadata.
+
+    Each finding preserves:
+      - module: the source module name
+      - source_file: basename of the evidence file
+      - category: the category key from the module's details dict
+      - All original finding keys
+    """
+    flattened: list[dict[str, Any]] = []
+    for contract in contracts:
+        module = contract["metadata"].get("module", "unknown")
+        source_file = os.path.basename(contract["metadata"].get("file", "unknown"))
+        for category, items in contract["details"].items():
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if isinstance(item, dict):
+                    finding = dict(item)
+                else:
+                    finding = {"value": str(item)}
+                finding.setdefault("module", module)
+                finding.setdefault("source_file", source_file)
+                finding.setdefault("category", category)
+                flattened.append(finding)
+    return flattened
 
 
 # ---------------------------------------------------------------------------

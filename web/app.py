@@ -272,7 +272,9 @@ def create_app() -> Flask:
 
         response_payload = {
             "session_id": session_id,
-            "generated_at": raw.get("generated_at", ""),
+            "generated_at": details.get(
+                "generated_at", snapshot.get("generated_at", "")
+            ),
             "views": [
                 "EXECUTIVE_SUMMARY",
                 "RISK_PRIORITY",
@@ -284,13 +286,19 @@ def create_app() -> Flask:
             ],
             "executive_assessment": executive,
             "framework_snapshot": snapshot,
-            "risk_assessments": snapshot.get("risk_assessments", []),
-            "attack_chains": snapshot.get("attack_chains", []),
-            "correlations": snapshot.get("correlations", []),
-            "relationships": raw.get("details", {}).get("relationships", []),
-            "resolved_entities": raw.get("details", {}).get("resolved_entities", []),
-            "entities": raw.get("details", {}).get("entities", []),
-            "findings": raw.get("details", {}).get("findings", []),
+            "risk_assessments": details.get(
+                "risk_assessments", snapshot.get("risk_assessments", [])
+            ),
+            "attack_chains": details.get(
+                "attack_chains", snapshot.get("attack_chains", [])
+            ),
+            "correlations": details.get(
+                "correlations", snapshot.get("correlations", [])
+            ),
+            "relationships": details.get("relationships", []),
+            "resolved_entities": details.get("resolved_entities", []),
+            "entities": details.get("entities", []),
+            "findings": details.get("findings", []),
             "explain_order": [
                 "ExecutiveAssessment",
                 "RiskAssessment",

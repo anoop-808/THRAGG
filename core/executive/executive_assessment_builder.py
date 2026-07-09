@@ -11,13 +11,23 @@ from collections import Counter
 from datetime import UTC, datetime
 
 from ..foundation.finding import Confidence, Severity
+from ..risk.risk_assessment import RiskAssessment
 from ..risk.risk_level import RiskLevel
 from ..shared.traceability_map import TraceabilityMap
-from .executive_assessment import ExecutiveAssessment, stable_executive_assessment_id
+from .assessment_scope import AssessmentScope
+from .business_impact_engine import BusinessImpactEngine
+from .business_language_registry import BusinessLanguageRegistry
+from .executive_assessment import (
+    ExecutiveAssessment,
+    ExecutiveRisk,
+    stable_executive_assessment_id,
+)
 from .executive_schema import validate_executive_assessment
 from .framework_snapshot import FrameworkSnapshot
 from .framework_statistics import CountMetric, FrameworkStatistics
 from .observation import Observation, ObservationCategory
+from .posture_calculator import PostureCalculator
+from .recommendation_engine import RecommendationEngine
 from .security_posture import SecurityPosture
 
 __all__ = ["ExecutiveAssessmentBuilder"]
@@ -26,19 +36,37 @@ __all__ = ["ExecutiveAssessmentBuilder"]
 class ExecutiveAssessmentBuilder:
     """Translate scored intelligence into executive language."""
 
-    def __init__(self, engine_version: str = "intelligence-v1") -> None:
+    def __init__(
+        self,
+        engine_version: str = "intelligence-v1",
+        posture_calculator: PostureCalculator | None = None,
+        business_impact_engine: BusinessImpactEngine | None = None,
+        recommendation_engine: RecommendationEngine | None = None,
+        language_registry: BusinessLanguageRegistry | None = None,
+    ) -> None:
         self.engine_version = engine_version
+        self.posture_calculator = posture_calculator or PostureCalculator()
+        self.business_impact_engine = business_impact_engine or BusinessImpactEngine()
+        self.recommendation_engine = recommendation_engine or RecommendationEngine()
+        self.language_registry = language_registry or BusinessLanguageRegistry()
 
     def build(
         self,
         snapshot: FrameworkSnapshot,
         generated_at: str | None = None,
+        assessment_scope: AssessmentScope | None = None,
     ) -> ExecutiveAssessment:
         """Build one structured executive assessment."""
         generated_at = (
             generated_at or datetime.now(UTC).replace(microsecond=0).isoformat()
         )
+        if assessment_scope is None:
+            assessment_scope = AssessmentScope((), (), (), (), generated_at)
+
+        risks = tuple(sorted(snapshot.risk_assessments, key=lambda item: (-item.score, item.id)))
         observations = self._observations(snapshot)
+        recommendations = self.recommendation_engine.build(risks)
+
         assessment = ExecutiveAssessment(
             id=stable_executive_assessment_id(
                 snapshot.snapshot_version,
@@ -47,10 +75,19 @@ class ExecutiveAssessmentBuilder:
             ),
             summary=self._summary(snapshot),
             observations=observations,
-            recommendations=self._recommendations(snapshot),
+            executive_recommendations=recommendations,
+            top_priorities=tuple(item.title for item in recommendations[:5]),
+            top_risks=self._top_risks(risks),
+            business_impact=self.business_impact_engine.build(risks),
             statistics=self._statistics(snapshot),
-            security_posture=self._posture(snapshot),
+            security_posture=self.posture_calculator.calculate(risks),
             traceability=self._traceability(snapshot, observations),
+            assessment_scope=assessment_scope,
+            metadata={
+                "engine_version": self.engine_version,
+                "risk_assessment_count": len(risks),
+                "input_contract": "FrameworkSnapshot",
+            },
             engine_version=self.engine_version,
             generated_at=generated_at,
         )
@@ -65,6 +102,21 @@ class ExecutiveAssessmentBuilder:
             f"{highest.risk_level.value.title()} environmental risk is driven by "
             f"{len(snapshot.attack_chains)} attack path(s) across "
             f"{snapshot.entity_count} known asset(s)."
+        )
+
+    def _top_risks(
+        self,
+        risks: tuple[RiskAssessment, ...],
+    ) -> tuple[ExecutiveRisk, ...]:
+        return tuple(
+            ExecutiveRisk(
+                risk_id=risk.id,
+                risk_level=risk.risk_level.value,
+                score=risk.score,
+                summary=self.language_registry.translate_text(risk.summary),
+                suggested_action=getattr(risk, "suggested_action", risk.recommendation),
+            )
+            for risk in risks[:5]
         )
 
     def _observations(self, snapshot: FrameworkSnapshot) -> tuple[Observation, ...]:
@@ -87,7 +139,7 @@ class ExecutiveAssessmentBuilder:
                     category=ObservationCategory.EXPOSURE,
                     severity=_severity(risk.risk_level),
                     confidence=chain.confidence if chain else Confidence.MEDIUM,
-                    text=f"{risk.risk_level.value.title()} risk attack path: {chain.title if chain else risk.attack_chain_id}.",
+                    text=f"{risk.risk_level.value.title()} risk attack path: {self.language_registry.translate_text(chain.title if chain else risk.summary)}.",
                     supporting_object_ids=(
                         risk.id,
                         risk.attack_chain_id,
