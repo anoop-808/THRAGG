@@ -8,24 +8,36 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
   white-space: nowrap;
   user-select: none;
+  position: relative;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
 }
 
 .btn-primary {
   background: var(--brand-gradient);
   color: white;
   border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
   box-shadow: var(--shadow-glow);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(var(--scale-hover));
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(var(--scale-active));
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary {
@@ -38,7 +50,13 @@
   background: rgba(255, 255, 255, 0.10);
   color: var(--text-primary);
   border-color: var(--border-medium);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(var(--scale-hover));
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active {
+  transform: translateY(1px) scale(var(--scale-active));
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .btn-ghost {
@@ -50,17 +68,29 @@
 .btn-ghost:hover {
   color: var(--text-secondary);
   background: var(--bg-glass-hover);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(var(--scale-hover));
+}
+
+.btn-ghost:active {
+  transform: translateY(1px) scale(var(--scale-active));
+  background: var(--bg-glass);
+}
+
+.btn:disabled, .btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-sm {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--font-size-xs);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
 }
 
 .btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -77,28 +107,30 @@
 }
 
 .card:hover {
-  border-color: var(--border-subtle);
+  border-color: var(--border-medium);
+  transform: scale(var(--scale-hover));
+  box-shadow: var(--shadow-md);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-glass);
 }
 
 .card-body {
-  padding: var(--space-5);
+  padding: var(--space-6);
 }
 
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-4) var(--space-6);
   border-top: 1px solid var(--border-glass);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
 }
 
@@ -109,13 +141,15 @@
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-6);
   transition: all var(--transition-base);
 }
 
 .glass-card:hover {
   background: var(--bg-glass-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-medium);
+  transform: scale(var(--scale-hover));
+  box-shadow: var(--shadow-lg);
 }
 
 /* ── KPI Card ────────────────────────────────────────────────────────── */
@@ -123,10 +157,10 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
@@ -145,7 +179,7 @@
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(var(--scale-hover));
   box-shadow: var(--shadow-lg);
   border-color: var(--border-medium);
 }
@@ -155,18 +189,18 @@
 }
 
 .kpi-card .kpi-icon {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  margin-bottom: var(--space-1);
+  font-size: 24px;
+  margin-bottom: var(--space-2);
 }
 
 .kpi-card .kpi-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -174,14 +208,14 @@
 }
 
 .kpi-card .kpi-value {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
   line-height: 1;
 }
 
 .kpi-card .kpi-trend {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -196,9 +230,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px 8px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
 
@@ -212,7 +246,7 @@
 /* ── Progress Bar ────────────────────────────────────────────────────── */
 .progress-bar {
   width: 100%;
-  height: 4px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
   overflow: hidden;
@@ -239,8 +273,8 @@
 
 .data-table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-xs);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--text-muted);
   text-transform: uppercase;
@@ -249,8 +283,8 @@
 }
 
 .data-table td {
-  padding: var(--space-3) var(--space-3);
-  font-size: var(--font-size-sm);
+  padding: var(--space-4) var(--space-4);
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
@@ -273,8 +307,8 @@
 }
 
 .tab {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-sm);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
@@ -296,9 +330,9 @@
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: var(--radius-sm);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
@@ -363,12 +397,105 @@
 }
 
 .empty-state-text {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-  max-width: 300px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  animation: slideInUp 0.4s var(--transition-spring) both;
+  transition: all 0.3s ease;
 }
 
-/* ── Status Indicator ────────────────────────────────────────────────── */
+/* ── Context Workspace States ────────────────────────────────────────── */
+.dimmed {
+  opacity: 0.3 !important;
+  filter: grayscale(80%);
+  pointer-events: none;
+}
+
+.active {
+  box-shadow: 0 0 0 1px var(--brand-primary), 0 0 12px rgba(108, 92, 231, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.preview {
+  box-shadow: 0 0 0 1px var(--text-muted);
+}
+
+/* ── Status Indicators ───────────────────────────────────────────────── */
+.badge-sm {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* ── TopNav Filters & Search Dropdown ────────────────────────────────── */
+.topnav-filters {
+  display: flex;
+  gap: var(--space-3);
+  margin-right: var(--space-4);
+}
+
+.topnav-filters select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+.topnav-filters select:hover {
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.topnav-filters select option, .cp-select option {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-dropdown.hidden {
+  display: none;
+}
+
+.search-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.search-item:last-child {
+  border-bottom: none;
+}
+.search-item:hover {
+  background: var(--bg-glass-hover);
+}
+.search-item-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.search-item-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
 .status-dot {
   width: 8px;
   height: 8px;
@@ -427,3 +554,30 @@
 .count-badge.high     { background: var(--color-high-bg); color: var(--color-high); }
 .count-badge.medium   { background: var(--color-medium-bg); color: var(--color-medium); }
 .count-badge.low      { background: var(--color-low-bg); color: var(--color-low); }
+
+/* ── Visualization States ────────────────────────────────────────────── */
+.dimmed {
+  opacity: 0.15;
+  filter: grayscale(100%);
+  transition: all var(--transition-base);
+}
+
+.highlight {
+  position: relative;
+  z-index: 10;
+  box-shadow: var(--shadow-glow);
+  transform: scale(1.02);
+  border-color: var(--brand-primary) !important;
+  transition: all var(--transition-base);
+}
+
+.selected-node {
+  stroke: #fff !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 12px var(--brand-primary));
+}
+
+/* ── Knowledge Graph Labels ─────────────────────────────────────────── */
+#kg-nodes-layer.kg-hide-labels .kg-node:not(.active):not(.preview):not(.neighbor) .kg-label {
+  opacity: 0 !important;
+}

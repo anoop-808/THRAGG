@@ -6,6 +6,14 @@ const THRAGG_Sidebar = {
   /* ── Navigation items grouped by section ───────────────────────────── */
   sections: [
     {
+      name: 'Investigations',
+      items: [
+        { id: 'active_case', label: 'Active Case', icon: 'security' },
+        { id: 'new_case', label: 'New Investigation', icon: 'dashboard' },
+        { id: 'archive_case', label: 'Investigation Archive', icon: 'layers' }
+      ]
+    },
+    {
       name: 'Overview',
       items: [
         { id: 'executive', label: 'Executive Overview', icon: 'dashboard' }
@@ -25,6 +33,14 @@ const THRAGG_Sidebar = {
         { id: 'chains', label: 'Attack Chains', icon: 'timeline' },
         { id: 'mitre', label: 'MITRE Coverage', icon: 'grid_view' },
         { id: 'traceability', label: 'Traceability', icon: 'account_tree' }
+      ]
+    },
+    {
+      name: 'Investigation',
+      items: [
+        { id: 'entities', label: 'Entity Explorer', icon: 'search' },
+        { id: 'findings', label: 'Finding Explorer', icon: 'bug' },
+        { id: 'session', label: 'Session Overview', icon: 'info' }
       ]
     },
     {
@@ -55,7 +71,10 @@ const THRAGG_Sidebar = {
     hub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v7m0 6v7M2 12h7m6 0h7"/></svg>',
     lightbulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>',
     schedule: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    bug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
   },
 
   /* ── Render the sidebar ────────────────────────────────────────────── */

@@ -6,11 +6,24 @@ const THRAGG_App = {
   currentView: 'executive',
 
   /* ── Initialize the application ────────────────────────────────────── */
-  init() {
+  async init() {
     this._renderShell();
+    this._initAtmosphere();
     this._initNavigation();
+    
+    if (typeof THRAGG_CaseManager !== 'undefined') {
+      await THRAGG_CaseManager.init();
+    }
+    
     this.navigate('executive');
-    this._initGlobalSearch();
+    // Initialize utilities
+    if (typeof THRAGG_GlobalIndex !== 'undefined') THRAGG_GlobalIndex.init();
+    if (typeof THRAGG_CommandPalette !== 'undefined') THRAGG_CommandPalette.init();
+    if (typeof THRAGG_KeyboardShortcuts !== 'undefined') THRAGG_KeyboardShortcuts.init();
+    
+    // Initialize Replay Engine
+    if (typeof THRAGG_ReplayEngine !== 'undefined') THRAGG_ReplayEngine.init();
+    if (typeof THRAGG_ReplayControls !== 'undefined') THRAGG_ReplayControls.init();
   },
 
   /* ── Render the app shell layout ───────────────────────────────────── */
@@ -19,20 +32,94 @@ const THRAGG_App = {
     if (!root) return;
 
     root.innerHTML = `
-      <div class="app-shell">
+      <div class="app-shell" id="app-shell">
         <aside class="sidebar" id="sidebar"></aside>
         <header class="topnav" id="topnav"></header>
         <main class="main-content" id="main-content"></main>
+        <aside class="context-panel" id="context-panel"></aside>
       </div>
+      <div id="toast-container"></div>
     `;
 
     // Render sidebar and top navigation
     THRAGG_Sidebar.render(document.getElementById('sidebar'), this.currentView);
     THRAGG_TopNavigation.render(document.getElementById('topnav'), this.currentView);
+    
+    // Initialize context panel
+    if (typeof THRAGG_ContextPanel !== 'undefined') {
+      THRAGG_ContextPanel.init(document.getElementById('context-panel'));
+    }
+
+    // Initialize session
+    if (typeof THRAGG_InvestigationSession !== 'undefined') {
+      THRAGG_InvestigationSession.init();
+    }
+  },
+
+  /* ── Command Center Atmosphere ─────────────────────────────────────── */
+  _initAtmosphere() {
+    const shell = document.getElementById('app-shell');
+    if (!shell) return;
+    
+    // Analyze intelligence dataset
+    const assessment = THRAGG_DATA.executive_assessment;
+    if (assessment && assessment.top_risks && assessment.top_risks.length > 0) {
+      const highestRisk = assessment.top_risks[0].risk_level;
+      if (highestRisk === 'CRITICAL' || highestRisk === 'HIGH') {
+        shell.classList.add('state-critical');
+        return;
+      }
+    }
+    
+    // Default healthy/idle
+    shell.classList.add('state-healthy');
+
+    // Global listener to shift atmosphere when interacting with entities
+    if (typeof THRAGG_EventBus !== 'undefined') {
+      THRAGG_EventBus.on('ENTITY_SELECTED', (id) => {
+        if (id) {
+          shell.classList.add('state-active');
+        } else {
+          shell.classList.remove('state-active');
+        }
+      });
+      THRAGG_EventBus.on('CHAIN_SELECTED', (chain) => {
+        if (chain) shell.classList.add('state-active');
+        else shell.classList.remove('state-active');
+      });
+    }
+  },
+
+  /* ── Toast Notifications ───────────────────────────────────────────── */
+  showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icon = type === 'success' ? '✓' : 'ℹ';
+    
+    toast.innerHTML = `
+      <div style="font-weight: bold; width: 16px; text-align: center;">${icon}</div>
+      <div>${message}</div>
+    `;
+    
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.animation = 'toast-out 0.3s var(--ease-out) forwards';
+      setTimeout(() => {
+        if (container.contains(toast)) container.removeChild(toast);
+      }, 300);
+    }, duration);
   },
 
   /* ── Navigate to a view ────────────────────────────────────────────── */
   navigate(viewId) {
+    if (this.currentView === 'graph' && typeof THRAGG_KnowledgeGraph !== 'undefined') {
+      THRAGG_KnowledgeGraph.destroy();
+    }
     this.currentView = viewId;
     this._renderView(viewId);
 
@@ -51,17 +138,26 @@ const THRAGG_App = {
     if (!container) return;
 
     const views = {
+      active_case:   () => this._renderCaseWorkspace(container),
+      new_case:      () => { THRAGG_CaseManager.createCase().then(() => this.navigate('active_case')); },
+      archive_case:  () => this._renderCaseArchive(container),
       executive:     () => this._renderExecutiveOverview(container),
       posture:       () => this._renderSecurityPosture(container),
-      risks:          () => this._renderRiskDistribution(container),
+      risks:         () => this._renderRiskDistribution(container),
       domains:       () => this._renderDomainCoverage(container),
       chains:        () => this._renderAttackChains(container),
       mitre:         () => this._renderMITRE(container),
       traceability:  () => this._renderTraceability(container),
       graph:         () => this._renderKnowledgeGraph(container),
+      entities:      () => this._renderEntityExplorer(container),
+      findings:      () => this._renderFindingExplorer(container),
+      session:       () => this._renderSessionOverview(container),
       recommendations: () => this._renderRecommendations(container),
       timeline:      () => this._renderActivityTimeline(container),
-      downloads:     () => this._renderReportDownloads(container)
+      downloads:     () => this._renderReportDownloads(container),
+      replay_timeline: () => this._renderReplayTimeline(container),
+      report_composer: () => this._renderReportComposer(container),
+      report_preview:  () => this._renderReportPreview(container)
     };
 
     const renderFn = views[viewId];
@@ -76,6 +172,82 @@ const THRAGG_App = {
       (el).style.animationDelay = `${i * 50}ms`;
     });
   },
+  
+  /* ── Case Management Views ─────────────────────────────────────────── */
+  _renderReportDownloads(container) {
+    // Redirect to the new Report Composer
+    this._renderReportComposer(container);
+  },
+
+  _renderReportComposer(container) {
+    container.innerHTML = `<div class="view-container animate-fade-in-up" id="report-composer-container"></div>`;
+    requestAnimationFrame(() => {
+      if (typeof THRAGG_ReportComposer !== 'undefined') {
+        THRAGG_ReportComposer.render(document.getElementById('report-composer-container'));
+      }
+    });
+  },
+
+  _renderReportPreview(container) {
+    container.innerHTML = `<div class="view-container animate-fade-in-up" id="report-preview-container" style="height:100%;"></div>`;
+    requestAnimationFrame(() => {
+      if (typeof THRAGG_ReportPreview !== 'undefined') {
+        THRAGG_ReportPreview.render(document.getElementById('report-preview-container'));
+      }
+    });
+  },
+
+  _renderCaseWorkspace(container) {
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up" id="case-workspace-container"></div>
+    `;
+    requestAnimationFrame(() => {
+      if (typeof THRAGG_CaseWorkspace !== 'undefined') {
+        THRAGG_CaseWorkspace.render(document.getElementById('case-workspace-container'));
+      }
+    });
+  },
+
+  _renderReplayTimeline(container) {
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up" id="replay-timeline-container"></div>
+    `;
+    requestAnimationFrame(() => {
+      if (typeof THRAGG_ReplayTimeline !== 'undefined') {
+        THRAGG_ReplayTimeline.render(document.getElementById('replay-timeline-container'));
+      }
+    });
+  },
+
+  _renderCaseArchive(container) {
+    const cases = THRAGG_CaseManager.getAllCases();
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up">
+        <div class="view-header">
+          <div class="page-title">Investigation Archive</div>
+          <div class="page-subtitle">View and manage all past and present investigations</div>
+        </div>
+        <div class="grid grid-2" style="margin-top:var(--space-6);">
+          ${cases.map(c => `
+            <div class="card" style="cursor:pointer; transition:transform 0.2s;" onclick="THRAGG_CaseManager.setActiveCase('${c.id}').then(()=>THRAGG_App.navigate('active_case'))" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              <div class="card-body">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div style="font-weight:bold; font-size:var(--font-size-md);">${c.title}</div>
+                  <span class="tag">${c.status}</span>
+                </div>
+                <div style="font-size:var(--font-size-sm); color:var(--text-muted); margin-top:var(--space-2);">
+                  ID: ${c.id} · Created: ${new Date(c.created_at).toLocaleDateString()}
+                </div>
+                <div style="font-size:var(--font-size-sm); color:var(--text-secondary); margin-top:var(--space-3);">
+                  ${c.bookmarks.length} Bookmarks · ${c.notes.length} Notes
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  },
 
   /* ── View: Executive Overview ──────────────────────────────────────── */
   _renderExecutiveOverview(container) {
@@ -84,9 +256,9 @@ const THRAGG_App = {
 
     container.innerHTML = `
       <div class="view-container executive-overview">
-        <div class="view-header animate-fade-in-up">
-          <div class="page-title">Executive Overview</div>
-          <div class="page-subtitle">Comprehensive security intelligence summary · Generated ${THRAGG_Charts.formatTimestamp(THRAGG_DATA.generated_at)}</div>
+        <div class="view-header animate-fade-in-up" style="margin-bottom: var(--space-8);">
+          <div class="page-title" style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-tight);">Executive Overview</div>
+          <div class="page-subtitle" style="font-size: var(--font-size-md); color: var(--text-muted); margin-top: var(--space-2);">Comprehensive security intelligence summary · Generated ${THRAGG_Charts.formatTimestamp(THRAGG_DATA.generated_at)}</div>
         </div>
 
         <!-- Intelligence Core -->
@@ -112,19 +284,19 @@ const THRAGG_App = {
         </div>
 
         <!-- Summary -->
-        <div class="glass-card" style="margin-bottom: var(--space-6);">
-          <div class="section-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="glass-card" style="margin-bottom: var(--space-8); padding: var(--space-6);">
+          <div class="section-title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-4);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
             </svg>
             Intelligence Summary
           </div>
-          <p style="font-size: var(--font-size-sm); color: var(--text-secondary); line-height: 1.7;">
+          <p style="font-size: var(--font-size-md); color: var(--text-secondary); line-height: var(--line-height-relaxed); max-width: 900px;">
             ${assessment.overall_summary}
           </p>
-          <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4); flex-wrap: wrap;">
+          <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5); flex-wrap: wrap;">
             ${assessment.top_priorities.slice(0, 3).map(p => `
-              <span class="tag">${p}</span>
+              <span class="tag" style="font-size: var(--font-size-sm); padding: var(--space-2) var(--space-3); background: var(--bg-elevated); border: 1px solid var(--border-medium);">${p}</span>
             `).join('')}
           </div>
         </div>
@@ -368,14 +540,26 @@ const THRAGG_App = {
               <span class="section-title" style="margin:0;">Observations</span>
             </div>
             <div class="card-body">
+              ${(THRAGG_DATA.executive_assessment.observations || []).length === 0 ? `
+                <div class="empty-state">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: var(--space-4);">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  <div class="empty-state-title" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">No Observations Identified</div>
+                  <div class="empty-state-text" style="color: var(--text-secondary); max-width: 400px; text-align: center;">
+                    The intelligence engine did not identify any actionable observations within the current assessment scope.
+                  </div>
+                </div>
+              ` : `
               <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                 ${(THRAGG_DATA.executive_assessment.observations || []).slice(0, 5).map(obs => `
                   <div style="padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border-left: 3px solid ${THRAGG_Charts.severityColor(obs.severity)};">
                     <div style="font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: ${THRAGG_Charts.severityColor(obs.severity)}; margin-bottom: var(--space-1);">${obs.severity} · ${obs.category}</div>
-                    <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">${obs.text}</div>
+                    <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">${obs.summary}</div>
                   </div>
                 `).join('')}
               </div>
+              `}
             </div>
           </div>
         </div>
@@ -441,12 +625,12 @@ const THRAGG_App = {
   /* ── View: Knowledge Graph ─────────────────────────────────────────── */
   _renderKnowledgeGraph(container) {
     container.innerHTML = `
-      <div class="view-container animate-fade-in-up">
-        <div class="view-header">
+      <div class="view-container view-container--canvas animate-fade-in-up">
+        <div class="view-header" style="flex-shrink: 0; padding: var(--space-8) var(--space-8) var(--space-5);">
           <div class="page-title">Knowledge Graph</div>
           <div class="page-subtitle">Relationship graph of resolved entities and their connections</div>
         </div>
-        <div id="kg-content"></div>
+        <div id="kg-content" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
       </div>
     `;
 
@@ -503,6 +687,57 @@ const THRAGG_App = {
 
     requestAnimationFrame(() => {
       THRAGG_ReportDownloads.render(document.getElementById('downloads-content'));
+    });
+  },
+
+  /* ── View: Entity Explorer ─────────────────────────────────────────── */
+  _renderEntityExplorer(container) {
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up">
+        <div class="view-header">
+          <div class="page-title">Entity Explorer</div>
+          <div class="page-subtitle">Search, filter, and inspect normalized entities</div>
+        </div>
+        <div id="entities-content"></div>
+      </div>
+    `;
+
+    requestAnimationFrame(() => {
+      THRAGG_EntityExplorer.render(document.getElementById('entities-content'));
+    });
+  },
+
+  /* ── View: Finding Explorer ────────────────────────────────────────── */
+  _renderFindingExplorer(container) {
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up">
+        <div class="view-header">
+          <div class="page-title">Finding Explorer</div>
+          <div class="page-subtitle">Triage and filter security findings</div>
+        </div>
+        <div id="findings-content"></div>
+      </div>
+    `;
+
+    requestAnimationFrame(() => {
+      THRAGG_FindingExplorer.render(document.getElementById('findings-content'));
+    });
+  },
+
+  /* ── View: Session Overview ────────────────────────────────────────── */
+  _renderSessionOverview(container) {
+    container.innerHTML = `
+      <div class="view-container animate-fade-in-up">
+        <div class="view-header">
+          <div class="page-title">Session Overview</div>
+          <div class="page-subtitle">Execution footprint and data source details</div>
+        </div>
+        <div id="session-content"></div>
+      </div>
+    `;
+
+    requestAnimationFrame(() => {
+      THRAGG_SessionOverview.render(document.getElementById('session-content'));
     });
   },
 

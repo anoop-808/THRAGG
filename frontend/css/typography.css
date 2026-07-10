@@ -4,24 +4,24 @@
 
 /* ── Page Title ──────────────────────────────────────────────────────── */
 .page-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--text-primary);
 }
 
 .page-subtitle {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--text-muted);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
 }
 
 /* ── Section Heading ─────────────────────────────────────────────────── */
 .section-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-6);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -34,16 +34,16 @@
 
 /* ── Card Title ──────────────────────────────────────────────────────── */
 .card-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .card-value {
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--text-primary);
@@ -51,18 +51,18 @@
 }
 
 .card-value.small {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
 }
 
 .card-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
 }
 
 /* ── Metric Label ────────────────────────────────────────────────────── */
 .metric-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-muted);
   text-transform: uppercase;
@@ -70,7 +70,7 @@
 }
 
 .metric-value {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
 }

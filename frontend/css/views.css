@@ -8,7 +8,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-8) var(--space-5);
+  padding: var(--space-10) var(--space-6);
   text-align: center;
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
@@ -26,7 +26,7 @@
 }
 
 .executive-overview .posture-label {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-5xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
   position: relative;
@@ -39,10 +39,10 @@
 .executive-overview .posture-label.critical  { color: var(--color-critical); }
 
 .executive-overview .posture-description {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--text-muted);
-  margin-top: var(--space-2);
-  max-width: 400px;
+  margin-top: var(--space-3);
+  max-width: 500px;
   position: relative;
 }
 
@@ -58,9 +58,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
 
 .scope-card-item:last-child {
@@ -91,8 +91,8 @@
 }
 
 .risk-bar-label {
-  width: 60px;
-  font-size: var(--font-size-xs);
+  width: 80px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-muted);
   text-transform: uppercase;
@@ -102,7 +102,7 @@
 
 .risk-bar-track {
   flex: 1;
-  height: 24px;
+  height: 32px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -125,7 +125,7 @@
 .risk-bar-fill.info     { background: linear-gradient(90deg, var(--color-info), rgba(59, 130, 246, 0.6)); }
 
 .risk-bar-count {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -134,7 +134,7 @@
 .risk-bar-percent {
   width: 40px;
   text-align: right;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
@@ -150,7 +150,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  padding: var(--space-5);
   text-align: center;
   transition: all var(--transition-base);
   cursor: pointer;
@@ -162,18 +162,18 @@
 }
 
 .domain-card-icon {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto var(--space-3);
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .domain-card-name {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   text-transform: uppercase;
@@ -181,7 +181,7 @@
 }
 
 .domain-card-count {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   margin-top: var(--space-2);
   line-height: 1;
@@ -210,18 +210,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-glass);
 }
 
 .chain-card-body {
-  padding: var(--space-5);
+  padding: var(--space-6);
 }
 
 .chain-step {
   display: flex;
   gap: var(--space-4);
-  padding: var(--space-3) 0;
+  padding: var(--space-4) 0;
   position: relative;
 }
 
@@ -236,15 +236,15 @@
 }
 
 .chain-step-number {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--brand-cyan-dim);
   border: 1px solid rgba(0, 210, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: var(--font-weight-bold);
   color: var(--brand-cyan);
   flex-shrink: 0;
@@ -255,13 +255,13 @@
 }
 
 .chain-step-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
 }
 
 .chain-step-detail {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-top: var(--space-1);
 }
@@ -372,7 +372,7 @@
 /* ── Knowledge Graph ─────────────────────────────────────────────────── */
 .knowledge-graph-container {
   width: 100%;
-  height: 500px;
+  height: 700px;
   border-radius: var(--radius-lg);
   background: radial-gradient(ellipse at center, rgba(108, 92, 231, 0.03) 0%, transparent 70%);
   border: 1px solid var(--border-glass);
@@ -394,7 +394,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-6);
   transition: all var(--transition-base);
   display: flex;
   gap: var(--space-4);
@@ -420,15 +420,15 @@
 }
 
 .rec-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
 }
 
 .rec-description {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
   line-height: var(--line-height-relaxed);
 }
 
@@ -457,7 +457,7 @@
 
 .activity-item {
   position: relative;
-  padding-bottom: var(--space-5);
+  padding-bottom: var(--space-6);
 }
 
 .activity-item:last-child {
@@ -487,14 +487,14 @@
 }
 
 .activity-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
   margin-top: var(--space-1);
 }
 
 .activity-detail {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-top: var(--space-1);
 }
@@ -510,7 +510,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-6);
   text-align: center;
   transition: all var(--transition-base);
   cursor: pointer;
@@ -523,18 +523,18 @@
 }
 
 .download-card-icon {
-  font-size: 24px;
-  margin-bottom: var(--space-2);
+  font-size: 32px;
+  margin-bottom: var(--space-3);
 }
 
 .download-card-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
 }
 
 .download-card-size {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-top: var(--space-1);
 }

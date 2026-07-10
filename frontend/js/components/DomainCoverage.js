@@ -28,7 +28,7 @@ const THRAGG_DomainCoverage = {
                   <span style="font-size: 20px;">${d.icon}</span>
                 </div>
                 <div class="domain-card-name" style="color: ${d.color}">${d.label}</div>
-                <div class="domain-card-count" style="color: ${d.color}">${d.issues}</div>
+                <div class="domain-card-count" style="color: ${d.color}" data-count="${d.issues}">0</div>
                 <div class="domain-card-status">
                   Issues Found
                   <span class="status-dot ${d.status}" style="vertical-align: middle; margin-left: 4px;"></span>
@@ -42,5 +42,13 @@ const THRAGG_DomainCoverage = {
         </div>
       </div>
     `;
+
+    // Animate counters
+    requestAnimationFrame(() => {
+      container.querySelectorAll('.domain-card-count[data-count]').forEach((el) => {
+        const target = parseInt(el.dataset.count);
+        THRAGG_Animations.countUp(el, target, 800);
+      });
+    });
   }
 };

@@ -14,22 +14,43 @@ const THRAGG_TopNavigation = {
     }
 
     container.innerHTML = `
-      <div class="topnav-left">
+      <div class="topnav-left" id="topnav-breadcrumb-container">
         <div class="topnav-breadcrumb">
-          <span>THRAGG</span>
-          <span>›</span>
-          <span id="current-view-label">${this._viewLabel(currentView)}</span>
+          <span style="cursor:pointer;" onclick="THRAGG_InvestigationSession.clearContext()">Session</span>
+          <span style="margin: 0 8px; color: var(--text-muted)">›</span>
+          <span id="current-view-label" style="color:var(--brand-light)">${this._viewLabel(currentView)}</span>
         </div>
       </div>
       <div class="topnav-right">
-        <div class="topnav-search">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input type="text" placeholder="Search findings, entities, chains..." id="global-search">
+        <div class="topnav-filters">
+          <select id="global-filter-severity">
+            <option value="ALL">All Severities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+          <select id="global-filter-type">
+            <option value="ALL">All Types</option>
+            <option value="ip">IP</option>
+            <option value="domain">Domain</option>
+            <option value="hash">File Hash</option>
+            <option value="user">User</option>
+          </select>
         </div>
-        <div class="topnav-time" id="topnav-time"></div>
+        <div class="topnav-search">
+          <button class="btn btn-secondary" style="width:100%; justify-content:flex-start; font-weight:var(--font-weight-normal);" onclick="if(typeof THRAGG_EventBus !== 'undefined') THRAGG_EventBus.emit('TOGGLE_COMMAND_PALETTE')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:var(--space-2);">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            Search intelligence, cases, and actions... (Ctrl+K)
+          </button>
+        </div>
         <div class="topnav-actions">
+          <button class="btn btn-secondary" style="margin-right: 8px; font-size: 11px;" onclick="if(typeof THRAGG_EventBus !== 'undefined') { THRAGG_EventBus.emit('REPLAY_START_REQUEST'); if(typeof THRAGG_App !== 'undefined') THRAGG_App.navigate('replay_timeline'); }">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Replay Mode
+          </button>
           <button class="topnav-btn" title="Notifications" onclick="alert('Notifications panel coming soon')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
@@ -46,10 +67,105 @@ const THRAGG_TopNavigation = {
     `;
 
     this._updateClock();
+    this._initSearchListeners();
+    this._initListeners();
   },
 
-  /* ── Update breadcrumb label ───────────────────────────────────────── */
+  _initSearchListeners() {
+    const input = document.getElementById('global-search');
+    const dropdown = document.getElementById('search-results');
+    if (!input || !dropdown) return;
+
+    input.addEventListener('input', (e) => {
+      const q = e.target.value.trim();
+      if (!q) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+      const results = THRAGG_GlobalSearch.search(q);
+      if (results.length === 0) {
+        dropdown.innerHTML = '<div class="search-item"><div class="search-item-desc">No results found</div></div>';
+      } else {
+        dropdown.innerHTML = results.map(r => `
+          <div class="search-item" data-target="${r.target}" data-label="${r.label}">
+            <div class="search-item-title">${r.label} <span class="badge" style="font-size:10px;margin-left:8px;">${r.type}</span></div>
+            <div class="search-item-desc">${r.desc}</div>
+          </div>
+        `).join('');
+      }
+      dropdown.classList.remove('hidden');
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const item = e.target.closest('.search-item');
+      if (item && item.dataset.target) {
+        THRAGG_App.navigate(item.dataset.target);
+        dropdown.classList.add('hidden');
+        input.value = '';
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    this._updateClock();
+  },
+
+  /* ── Listeners ─────────────────────────────────────────────────────── */
+  _initListeners() {
+    if (typeof THRAGG_EventBus !== 'undefined') {
+      THRAGG_EventBus.on('CONTEXT_CHANGED', () => this.updateBreadcrumbs());
+    }
+  },
+
+  /* ── Dynamic Breadcrumbs ───────────────────────────────────────────── */
+  updateBreadcrumbs() {
+    const container = document.getElementById('topnav-breadcrumb-container');
+    if (!container) return;
+
+    if (typeof THRAGG_InvestigationSession === 'undefined' || !THRAGG_InvestigationSession.history.length) {
+      // Default view
+      const viewLabel = this._viewLabel(typeof THRAGG_App !== 'undefined' ? THRAGG_App.currentView : 'executive');
+      container.innerHTML = `
+        <div class="topnav-breadcrumb" style="animation: fadeInUp 0.3s ease;">
+          <span style="cursor:pointer; transition:color 0.2s;" onmouseover="this.style.color='var(--brand-primary)'" onmouseout="this.style.color=''">Session</span>
+          <span style="margin: 0 8px; color: var(--text-muted)">›</span>
+          <span id="current-view-label" style="color:var(--brand-light)">${viewLabel}</span>
+        </div>
+      `;
+      return;
+    }
+
+    const history = THRAGG_InvestigationSession.history;
+    const currentIndex = THRAGG_InvestigationSession.currentIndex;
+
+    let html = `<div class="topnav-breadcrumb" style="animation: fadeInUp 0.3s ease;">
+      <span style="cursor:pointer; transition:color 0.2s;" onmouseover="this.style.color='var(--brand-primary)'" onmouseout="this.style.color=''" onclick="THRAGG_InvestigationSession.clearContext()">Session</span>`;
+
+    for (let i = 0; i <= currentIndex; i++) {
+      const item = history[i];
+      if (!item.type || !item.id) continue;
+      
+      const isLast = i === currentIndex;
+      html += `
+        <span style="margin: 0 8px; color: var(--text-muted)">›</span>
+        <span style="cursor:${isLast ? 'default' : 'pointer'}; color:${isLast ? 'var(--brand-light)' : 'var(--text-secondary)'}; transition:color 0.2s;"
+              ${!isLast ? `onmouseover="this.style.color='var(--brand-primary)'" onmouseout="this.style.color='var(--text-secondary)'" onclick="THRAGG_InvestigationSession.jumpTo(${i})"` : ''}>
+          ${item.id}
+        </span>
+      `;
+    }
+    
+    html += `</div>`;
+    container.innerHTML = html;
+  },
+
+  /* ── Update breadcrumb label (Fallback) ────────────────────────────── */
   updateView(currentView) {
+    if (typeof THRAGG_InvestigationSession !== 'undefined' && THRAGG_InvestigationSession.activeContext) return;
     const label = document.getElementById('current-view-label');
     if (label) label.textContent = this._viewLabel(currentView);
   },

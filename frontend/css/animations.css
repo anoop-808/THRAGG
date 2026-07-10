@@ -9,7 +9,7 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -87,16 +87,16 @@
    ========================================================================== */
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-base) forwards;
+  animation: fadeIn var(--duration-cinematic) var(--ease-out) forwards;
 }
 
 .animate-fade-in-up,
 .fade-in-up {
-  animation: fadeInUp var(--transition-base) forwards;
+  animation: fadeInUp var(--duration-cinematic) var(--ease-out) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn var(--transition-base) forwards;
+  animation: scaleIn var(--duration-cinematic) var(--ease-out) forwards;
 }
 
 .animate-float {
@@ -104,30 +104,30 @@
 }
 
 .animate-in {
-  animation: fadeIn var(--transition-base) forwards;
+  animation: fadeIn var(--duration-medium) var(--ease-out) forwards;
 }
 
 .stagger-item {
   opacity: 0;
-  animation: fadeInUp var(--transition-base) forwards;
+  animation: fadeInUp var(--duration-cinematic) var(--ease-out) forwards;
 }
 
 /* Staggered children */
 .stagger-children > * {
   opacity: 0;
-  animation: fadeInUp var(--transition-base) forwards;
+  animation: fadeInUp var(--duration-cinematic) var(--ease-out) forwards;
 }
 
-.stagger-children > *:nth-child(1)  { animation-delay: 40ms; }
-.stagger-children > *:nth-child(2)  { animation-delay: 80ms; }
-.stagger-children > *:nth-child(3)  { animation-delay: 120ms; }
-.stagger-children > *:nth-child(4)  { animation-delay: 160ms; }
-.stagger-children > *:nth-child(5)  { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6)  { animation-delay: 240ms; }
-.stagger-children > *:nth-child(7)  { animation-delay: 280ms; }
-.stagger-children > *:nth-child(8)  { animation-delay: 320ms; }
-.stagger-children > *:nth-child(9)  { animation-delay: 360ms; }
-.stagger-children > *:nth-child(10) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(1)  { animation-delay: calc(var(--stagger-delay) * 1); }
+.stagger-children > *:nth-child(2)  { animation-delay: calc(var(--stagger-delay) * 2); }
+.stagger-children > *:nth-child(3)  { animation-delay: calc(var(--stagger-delay) * 3); }
+.stagger-children > *:nth-child(4)  { animation-delay: calc(var(--stagger-delay) * 4); }
+.stagger-children > *:nth-child(5)  { animation-delay: calc(var(--stagger-delay) * 5); }
+.stagger-children > *:nth-child(6)  { animation-delay: calc(var(--stagger-delay) * 6); }
+.stagger-children > *:nth-child(7)  { animation-delay: calc(var(--stagger-delay) * 7); }
+.stagger-children > *:nth-child(8)  { animation-delay: calc(var(--stagger-delay) * 8); }
+.stagger-children > *:nth-child(9)  { animation-delay: calc(var(--stagger-delay) * 9); }
+.stagger-children > *:nth-child(10) { animation-delay: calc(var(--stagger-delay) * 10); }
 
 /* Hover lift */
 .hover-lift {
@@ -135,7 +135,7 @@
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(var(--scale-hover));
   box-shadow: var(--shadow-lg);
 }
 
@@ -151,7 +151,9 @@
 
 .glass-card:hover {
   background: var(--bg-glass-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-medium);
+  transform: scale(var(--scale-hover));
+  box-shadow: var(--shadow-lg);
 }
 
 /* Skeleton loading */

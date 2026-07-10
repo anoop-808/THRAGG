@@ -9,6 +9,9 @@
   <!-- Inter / JetBrains Mono are loaded from system fonts when available.   -->
   <!-- No external font requests are made. THRAGG is fully offline.           -->
 
+  <!-- Seamless cross-document transitions -->
+  <meta name="view-transition" content="same-origin">
+
   <!-- Design System -->
   <link rel="stylesheet" href="/frontend/css/design-tokens.css">
   <link rel="stylesheet" href="/frontend/css/reset.css">
@@ -57,6 +60,17 @@
   <!-- <script src="js/data.js"></script> removed as data is now fetched from /api/results/<session_id> -->
 
   <!-- Utility helpers -->
+  <script src="/frontend/js/utils/EventBus.js"></script>
+  <script src="/frontend/js/utils/StorageProvider.js"></script>
+  <script src="/frontend/js/utils/CaseManager.js"></script>
+  <script src="/frontend/js/utils/GraphPhysics.js"></script>
+  <script src="/frontend/js/utils/GlobalIndex.js"></script>
+  <script src="/frontend/js/utils/KeyboardShortcuts.js"></script>
+  <script src="/frontend/js/utils/InvestigationSession.js"></script>
+  <script src="/frontend/js/utils/ReplayEngine.js"></script>
+  <script src="/frontend/js/utils/ReportBuilder.js"></script>
+  <script src="/frontend/js/utils/ReportTemplate.js"></script>
+  <script src="/frontend/js/utils/ReportExporter.js"></script>
   <script src="/frontend/js/utils/charts.js"></script>
   <script src="/frontend/js/utils/animations.js"></script>
 
@@ -73,9 +87,19 @@
   <script src="/frontend/js/components/MITRECoverage.js"></script>
   <script src="/frontend/js/components/TraceabilityExplorer.js"></script>
   <script src="/frontend/js/components/KnowledgeGraph.js"></script>
+  <script src="/frontend/js/components/EntityExplorer.js"></script>
+  <script src="/frontend/js/components/FindingExplorer.js"></script>
   <script src="/frontend/js/components/Recommendations.js"></script>
   <script src="/frontend/js/components/ReportDownloads.js"></script>
   <script src="/frontend/js/components/ActivityTimeline.js"></script>
+  <script src="/frontend/js/components/SessionOverview.js"></script>
+  <script src="/frontend/js/components/ContextPanel.js"></script>
+  <script src="/frontend/js/components/CaseWorkspace.js"></script>
+  <script src="/frontend/js/components/ReplayControls.js"></script>
+  <script src="/frontend/js/components/ReplayTimeline.js"></script>
+  <script src="/frontend/js/components/ReportComposer.js"></script>
+  <script src="/frontend/js/components/ReportPreview.js"></script>
+  <script src="/frontend/js/components/CommandPalette.js"></script>
 
   <!-- Application -->
   <script src="/frontend/js/app.js"></script>

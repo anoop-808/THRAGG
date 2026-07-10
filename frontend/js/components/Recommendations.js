@@ -8,7 +8,17 @@ const THRAGG_Recommendations = {
     const recs = THRAGG_DATA.executive_assessment.executive_recommendations || [];
 
     if (!recs.length) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-text">No recommendations available.</div></div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: var(--space-4);">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          </svg>
+          <div class="empty-state-title" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">No Recommendations</div>
+          <div class="empty-state-text" style="color: var(--text-secondary); max-width: 400px; text-align: center;">
+            No critical action items or architectural recommendations were identified in the current intelligence scope.
+          </div>
+        </div>
+      `;
       return;
     }
 

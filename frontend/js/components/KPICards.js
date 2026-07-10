@@ -25,7 +25,7 @@ const THRAGG_KPICards = {
         </div>
         <div class="kpi-label">${kpi.label}</div>
         <div class="kpi-value" data-count="${kpi.value}" style="color: ${kpi.color}">
-          ${kpi.value}
+          0
         </div>
         ${kpi.trend ? `
           <div class="kpi-trend ${kpi.trend}">

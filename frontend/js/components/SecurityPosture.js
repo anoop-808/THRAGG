@@ -33,8 +33,8 @@ const THRAGG_SecurityPosture = {
                 ${riskCounts.map(r => `
                   <div>
                     <div class="metric-label">${r.name}</div>
-                    <div class="metric-value" style="color: ${THRAGG_Charts.severityColor(r.name)}; font-size: var(--font-size-lg);">
-                      ${r.count}
+                    <div class="metric-value" data-count="${r.count}" style="color: ${THRAGG_Charts.severityColor(r.name)}; font-size: var(--font-size-lg);">
+                      0
                     </div>
                   </div>
                 `).join('')}
@@ -55,6 +55,12 @@ const THRAGG_SecurityPosture = {
         })) : [{ count: 1, color: '#64748b' }];
         THRAGG_Charts.donut(canvas, segments, 140);
       }
+
+      // Animate risk count numbers
+      container.querySelectorAll('.metric-value[data-count]').forEach((el) => {
+        const target = parseInt(el.dataset.count);
+        THRAGG_Animations.countUp(el, target, 800);
+      });
     });
   }
 };

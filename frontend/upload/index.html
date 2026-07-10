@@ -6,6 +6,9 @@
   <title>THRAGG — Upload Evidence</title>
   <meta name="description" content="THRAGG Threat Hunting, Recon & Automated Gap Analysis Gateway — Upload evidence files for local offline security analysis." />
   <meta name="theme-color" content="#070b14" />
+  
+  <!-- Seamless cross-document transitions -->
+  <meta name="view-transition" content="same-origin">
 
   <style>
     /* ── Design Tokens (inline — no external dependencies) ─────────── */
@@ -33,17 +36,18 @@
       --color-info:      #3b82f6;
       --font-sans:       -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
       --font-mono:       'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-      --radius-sm:       4px;
-      --radius-md:       8px;
-      --radius-lg:       12px;
-      --radius-xl:       16px;
-      --radius-2xl:      20px;
+      --radius-sm:       6px;
+      --radius-md:       10px;
+      --radius-lg:       16px;
+      --radius-xl:       20px;
+      --radius-2xl:      24px;
       --shadow-md:       0 4px 12px rgba(0, 0, 0, 0.4);
       --shadow-lg:       0 8px 32px rgba(0, 0, 0, 0.5);
       --shadow-glow:     0 0 24px rgba(108, 92, 231, 0.18);
-      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      --transition-spring: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --transition-cinematic: 800ms cubic-bezier(0, 0, 0.2, 1);
     }
 
 
@@ -72,7 +76,7 @@
       box-shadow: 0 0 30px rgba(108, 92, 231, 0.4);
       position: relative;
       z-index: 10;
-      transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+      transition: all var(--transition-cinematic);
       animation: corePulseAtmosphere 4s ease-in-out infinite;
     }
     #thragg-core::before {
@@ -106,7 +110,7 @@
     .flying-file {
       position: fixed;
       z-index: 20;
-      transition: transform 0.9s cubic-bezier(0.2, 0, 0, 1), opacity 0.8s ease, filter 0.8s ease;
+      transition: transform var(--transition-cinematic), opacity 0.8s ease, filter 0.8s ease;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -137,7 +141,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       color: var(--text-muted);
-      transition: all 0.5s ease;
+      transition: all var(--transition-base);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -171,7 +175,7 @@
       text-align: center;
     }
     .counter-value {
-      font-size: 2rem;
+      font-size: 3rem;
       font-family: var(--font-mono);
       font-weight: 700;
       color: var(--text-primary);
@@ -190,7 +194,7 @@
     
     /* ── Completion Transition ──────────────────────────────────────── */
     #view-chamber.transitioning {
-      transition: opacity 0.8s ease, transform 0.8s ease;
+      transition: opacity var(--transition-cinematic), transform var(--transition-cinematic);
       opacity: 0;
       transform: scale(0.98);
     }
@@ -212,14 +216,15 @@
       pointer-events: all;
     }
     .completion-text {
-      font-size: 2.5rem;
+      font-size: 3.5rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       color: #fff;
       margin-top: 30px;
       opacity: 0;
       transform: translateY(20px);
-      transition: all 0.8s cubic-bezier(0.2, 0, 0, 1) 0.3s;
+      transition: all var(--transition-cinematic);
+      transition-delay: 0.3s;
     }
     #completion-overlay.active .completion-text {
       opacity: 1;
@@ -242,11 +247,11 @@
     }
     .chamber-pipeline {
       width: 100%;
-      max-width: 600px;
+      max-width: 800px;
       background: rgba(15, 21, 39, 0.75);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-2xl);
-      padding: 32px 40px;
+      padding: 48px 56px;
       box-shadow: var(--shadow-lg);
     }
     .chamber-pipeline .pipeline-step {
@@ -326,7 +331,7 @@
     }
 
     .brand-name {
-      font-size: 1.75rem;
+      font-size: 2.25rem;
       font-weight: 700;
       letter-spacing: -0.03em;
       background: var(--brand-gradient);
@@ -362,7 +367,7 @@
     /* ── Main card ──────────────────────────────────────────────────── */
     .card {
       width: 100%;
-      max-width: 680px;
+      max-width: 800px;
       background: rgba(15, 21, 39, 0.75);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-2xl);
@@ -373,7 +378,7 @@
     }
 
     .card-header {
-      padding: 24px 28px 0;
+      padding: 32px 40px 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -389,7 +394,7 @@
     }
 
     .card-body {
-      padding: 24px 28px;
+      padding: 32px 40px;
     }
 
     /* ── Drop Zone ──────────────────────────────────────────────────── */
@@ -397,7 +402,7 @@
       border: 2px dashed rgba(108, 92, 231, 0.3);
       border-radius: var(--radius-xl);
       background: rgba(108, 92, 231, 0.03);
-      padding: 48px 28px;
+      padding: 64px 40px;
       text-align: center;
       cursor: pointer;
       transition:
@@ -436,8 +441,8 @@
     }
 
     .drop-icon {
-      width: 52px;
-      height: 52px;
+      width: 72px;
+      height: 72px;
       background: rgba(108, 92, 231, 0.12);
       border: 1px solid rgba(108, 92, 231, 0.25);
       border-radius: var(--radius-lg);
@@ -456,14 +461,14 @@
     }
 
     .drop-title {
-      font-size: 0.9375rem;
+      font-size: 1.25rem;
       font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 6px;
     }
 
     .drop-subtitle {
-      font-size: 0.75rem;
+      font-size: 0.875rem;
       color: var(--text-muted);
       line-height: 1.6;
     }
@@ -624,7 +629,7 @@
       padding: 10px 20px;
       border-radius: var(--radius-md);
       font-family: var(--font-sans);
-      font-size: 0.8125rem;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       border: none;
@@ -682,7 +687,7 @@
 
     /* ── Status panel ────────────────────────────────────────────────── */
     .status-panel {
-      padding: 24px 28px;
+      padding: 32px 40px;
       display: none;
     }
 
@@ -1086,7 +1091,7 @@
 
   <!-- Completion Overlay -->
   <div id="completion-overlay">
-    <div id="big-core" style="width:120px; height:120px; border-radius:50%; background:var(--brand-gradient); box-shadow: 0 0 80px rgba(108, 92, 231, 0.8), 0 0 120px rgba(0, 210, 255, 0.5); position:relative; transition: transform 2s cubic-bezier(0.2,0,0,1);">
+    <div id="big-core" style="width:120px; height:120px; border-radius:50%; background:var(--brand-gradient); box-shadow: 0 0 80px rgba(108, 92, 231, 0.8), 0 0 120px rgba(0, 210, 255, 0.5); position:relative; transition: transform var(--transition-cinematic);">
       <div style="position:absolute; inset:-20px; border:1px dashed rgba(255,255,255,0.4); border-radius:50%; animation: spinRing 20s linear infinite;"></div>
     </div>
     <div class="completion-text">INTELLIGENCE READY</div>

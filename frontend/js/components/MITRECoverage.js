@@ -1,9 +1,8 @@
 /* ==========================================================================
-   THRAGG — MITRE ATT&CK Coverage Component
+   THRAGG — MITRE ATT&CK Coverage Component (Interactive)
    ========================================================================== */
 
 const THRAGG_MITRECoverage = {
-  /* ── MITRE techniques found in the dataset ─────────────────────────── */
   getTechniques() {
     const techniques = {};
     const correlations = THRAGG_DATA.correlations || [];
@@ -26,7 +25,6 @@ const THRAGG_MITRECoverage = {
     return techniques;
   },
 
-  /* ── MITRE technique reference ─────────────────────────────────────── */
   MITRE_REFERENCE: {
     'T1046': { name: 'Network Service Discovery', tactic: 'Discovery', stage: 'Initial Access' },
     'T1021.004': { name: 'Remote Services: SSH', tactic: 'Lateral Movement', stage: 'Lateral Movement' },
@@ -50,7 +48,19 @@ const THRAGG_MITRECoverage = {
     const entries = Object.entries(techniques);
 
     if (!entries.length) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-text">No MITRE techniques mapped.</div></div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: var(--space-4);">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <div class="empty-state-title" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">No MITRE Mapping Found</div>
+          <div class="empty-state-text" style="color: var(--text-secondary); max-width: 400px; text-align: center;">
+            No adversary behaviors matching the MITRE ATT&CK framework were identified in the current intelligence dataset.
+          </div>
+        </div>
+      `;
       return;
     }
 
@@ -68,7 +78,11 @@ const THRAGG_MITRECoverage = {
               const coverage = count / maxCount;
               const coverageClass = coverage > 0.8 ? 'coverage-full' : coverage > 0.3 ? 'coverage-partial' : 'coverage-none';
               return `
-                <div class="mitre-cell ${coverageClass}">
+                <div class="mitre-cell ${coverageClass} interactive-mitre" id="mitre-${id.replace('.', '-')}" 
+                     style="transition: all var(--transition-base); cursor: pointer;"
+                     onclick="if(typeof THRAGG_InvestigationSession !== 'undefined') THRAGG_InvestigationSession.setContext('MITRE', '${id}')"
+                     onmouseenter="if(typeof THRAGG_InvestigationSession !== 'undefined') THRAGG_InvestigationSession.setHoverPreview('MITRE', '${id}')"
+                     onmouseleave="if(typeof THRAGG_InvestigationSession !== 'undefined') THRAGG_InvestigationSession.clearHoverPreview()">
                   <div class="mitre-cell-id">${id}</div>
                   <div class="mitre-cell-name">${info ? info.name : 'Unknown Technique'}</div>
                   ${info ? `<div style="font-size: 9px; color: var(--text-muted); margin-top: var(--space-1);">${info.tactic}</div>` : ''}
@@ -87,5 +101,84 @@ const THRAGG_MITRECoverage = {
         </div>
       </div>
     `;
+
+    // Listen for MITRE events
+    if (typeof THRAGG_EventBus !== 'undefined' && !this.isBound) {
+      this.isBound = true;
+
+      const updateHighlights = (context) => {
+        const cells = document.querySelectorAll('.interactive-mitre');
+        if (!context || !context.type) {
+          cells.forEach(c => {
+            c.classList.remove('dimmed', 'active', 'preview');
+          });
+          return;
+        }
+
+        cells.forEach(c => {
+          c.classList.remove('dimmed', 'active', 'preview');
+          const mId = c.id.replace('mitre-', '').replace('-', '.');
+          
+          let matches = false;
+          if (context.type === 'MITRE' && context.id === mId) matches = true;
+          else if (context.type === 'Finding' || context.type === 'Observation' || context.type === 'Correlation') {
+            const finding = (THRAGG_DATA.executive_assessment?.observations || []).find(o => o.summary.includes(context.id) || o.id === context.id) || 
+                            (THRAGG_DATA.correlations || []).find(c => c.title === context.id || c.id === context.id);
+            if (finding && finding.mitre_tactics && finding.mitre_tactics.includes(mId)) matches = true;
+            if (finding && finding.mitre && finding.mitre.includes(mId)) matches = true;
+          }
+          else if (context.type === 'Attack Chain') {
+            const chain = (THRAGG_DATA.attack_chains || []).find(c => c.id === context.id || c.title === context.id);
+            if (chain && chain.mitre_techniques && chain.mitre_techniques.includes(mId)) matches = true;
+          }
+
+          if (matches) {
+            c.classList.add(context.isPreview ? 'preview' : 'active');
+          } else {
+            c.classList.add('dimmed');
+          }
+        });
+      };
+
+      THRAGG_EventBus.on('CONTEXT_CHANGED', updateHighlights);
+      THRAGG_EventBus.on('HOVER_PREVIEW', (ctx) => updateHighlights(ctx ? { ...ctx, isPreview: true } : null));
+
+      THRAGG_EventBus.on('REPLAY_STEP_CHANGED', (data) => {
+        if (!data || !data.step) return;
+        const cells = document.querySelectorAll('.interactive-mitre');
+        
+        const completed = new Set();
+        if (typeof THRAGG_ReplayEngine !== 'undefined') {
+          for (let i = 0; i < data.index; i++) {
+             const ev = THRAGG_ReplayEngine.events[i];
+             if (ev.mitre) ev.mitre.forEach(m => completed.add(m));
+          }
+        }
+        const current = new Set(data.step.mitre || []);
+
+        cells.forEach(c => {
+          c.classList.remove('dimmed', 'active', 'preview', 'replay-completed', 'replay-glow');
+          const mId = c.id.replace('mitre-', '').replace('-', '.');
+          if (current.has(mId)) {
+            c.classList.add('active', 'replay-glow');
+            c.style.boxShadow = '0 0 15px var(--brand-primary)';
+          } else if (completed.has(mId)) {
+            c.classList.add('active', 'replay-completed');
+            c.style.boxShadow = 'none';
+          } else {
+            c.classList.add('dimmed');
+            c.style.boxShadow = 'none';
+          }
+        });
+      });
+
+      THRAGG_EventBus.on('REPLAY_STOPPED', () => {
+        const cells = document.querySelectorAll('.interactive-mitre');
+        cells.forEach(c => {
+           c.classList.remove('dimmed', 'active', 'preview', 'replay-completed', 'replay-glow');
+           c.style.boxShadow = 'none';
+        });
+      });
+    }
   }
 };

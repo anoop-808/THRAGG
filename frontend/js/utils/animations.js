@@ -6,6 +6,12 @@ const THRAGG_Animations = {
   /* ── Animate element opacity and transform ─────────────────────────── */
   fadeIn(element, delay = 0, duration = 400) {
     if (!element) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      element.style.opacity = '1';
+      element.style.transform = 'none';
+      return;
+    }
     element.style.opacity = '0';
     element.style.transform = 'translateY(12px)';
     element.style.transition = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`;
@@ -19,7 +25,13 @@ const THRAGG_Animations = {
   stagger(container, delay = 40, duration = 400) {
     if (!container) return;
     const children = container.children;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     Array.from(children).forEach((child, i) => {
+      if (reducedMotion) {
+        child.style.opacity = '1';
+        child.style.transform = 'none';
+        return;
+      }
       child.style.opacity = '0';
       child.style.transform = 'translateY(12px)';
       child.style.transition = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) ${i * delay}ms`;
@@ -33,6 +45,11 @@ const THRAGG_Animations = {
   /* ── Animated counter ──────────────────────────────────────────────── */
   countUp(element, target, duration = 1000, prefix = '', suffix = '') {
     if (!element) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      element.textContent = `${prefix}${target.toLocaleString()}${suffix}`;
+      return;
+    }
     const start = performance.now();
     const animate = (now) => {
       const elapsed = now - start;
@@ -50,6 +67,11 @@ const THRAGG_Animations = {
   /* ── Animate progress bars ─────────────────────────────────────────── */
   animateProgressBar(element, targetPercent, duration = 1200) {
     if (!element) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      element.style.width = `${targetPercent}%`;
+      return;
+    }
     const start = performance.now();
     const animate = (now) => {
       const elapsed = now - start;
@@ -67,6 +89,11 @@ const THRAGG_Animations = {
   /* ── Typewriter effect ─────────────────────────────────────────────── */
   typewriter(element, text, speed = 30, delay = 0) {
     if (!element) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      element.textContent = text;
+      return;
+    }
     let index = 0;
     setTimeout(() => {
       const interval = setInterval(() => {
