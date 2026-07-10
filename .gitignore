@@ -1,3 +1,13 @@
+# Generated runtime
+thragg_results/
+web_sessions/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
 # Python
 __pycache__/
 .pytest_cache/
@@ -38,3 +48,27 @@ dashboard.html
 
 # Web adapter runtime — session uploads, reports, and state files
 web_sessions/
+
+# Python
+__pycache__/
+*.pyc
+
+# VirtualBox
+*.log
+
+# Generated reports
+thragg_results/
+
+# Runtime sessions
+web_sessions/
+
+# Temporary files
+*.tmp
+*.cache
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store	

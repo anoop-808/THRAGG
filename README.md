@@ -205,19 +205,36 @@ THRAGG eliminates this fragmentation by providing a unified investigation platfo
 
 # Project Structure
 
-```
-frontend/
+# Project Structure
+
+```text
+THRAGG/
+├── assets/                 # Branding, logos, screenshots
+├── core/                   # Intelligence processing engine
+│   ├── foundation/         # Findings, entities, relationships
+│   ├── correlation/        # Correlation engine
+│   ├── attack_chain/       # Attack chain reconstruction
+│   ├── executive/          # Executive assessment engine
+│   ├── dashboard/          # Dashboard generation
+│   ├── reporting/          # Report generation
+│   ├── risk/               # Risk scoring engine
+│   └── shared/             # Shared utilities
 │
-├── css/
+├── modules/               # Security data collectors
+├── frontend/              # Analyst dashboard
+├── web/                   # Web server
+├── tests/                 # Unit & integration tests
+├── docs/                  # Technical documentation
+├── data/                  # Sample datasets
+├── sample_evidence/       # Demonstration evidence
+├── static_findings/       # Static module outputs
+├── rules/                 # Detection rules
+├── schemas/               # Validation schemas
+├── tools/                 # Development utilities
 │
-├── js/
-│   ├── components/
-│   ├── utils/
-│   └── app.js
-│
-├── upload/
-│
-└── index.html
+├── thragg.py              # Main application entry point
+├── requirements.txt
+└── README.md
 ```
 
 ---
