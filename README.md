@@ -1,228 +1,216 @@
+<div align="center">
+
 # THRAGG
 
 ### Threat Hunting, Recon & Automated Gap Analysis Gateway
 
-> **THRAGG** is a modular cybersecurity orchestration framework that unifies findings from multiple security assessment tools into a single actionable report.
+**Enterprise Cybersecurity Investigation Platform**
+
+*Correlate • Investigate • Understand • Act*
+
+![Version](https://img.shields.io/badge/Version-v4.0.0-4F46E5?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Stable-22C55E?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Web-3B82F6?style=for-the-badge)
+![Language](https://img.shields.io/badge/Language-JavaScript-FACC15?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-E11D48?style=for-the-badge)
+
+> **Every alert tells a story. THRAGG reconstructs it.**
+
+</div>
 
 ---
 
-## Overview
+<p align="center">
 
-Modern security assessments often rely on numerous standalone tools that generate independent reports. Reviewing each output individually is time consuming and makes correlation difficult.
+> 🚧 **Screenshots and workflow preview coming soon.**
 
-THRAGG solves this problem by acting as an orchestration layer rather than another scanner.
-
-Instead of performing security analysis itself, THRAGG coordinates multiple specialized security modules, validates their outputs, extracts evidence, and generates a consolidated security report.
-
-This architecture allows each security project to remain independent while enabling unified reporting across multiple security domains.
+</p>
 
 ---
 
-## Key Features
+# Overview
 
-* Modular orchestration framework
-* Lightweight dispatcher architecture
-* Contract-based module execution
-* Automatic evidence collection
-* Unified reporting engine
-* Multi-module execution
-* Robust error handling
-* Warning isolation without stopping execution
-* Evidence routing by file type
-* Backward compatible module interface
-* Python 3.13 compatible
-* Fully documented codebase
-* Type hinted implementation
-* PEP8 compliant
+THRAGG (**Threat Hunting, Recon & Automated Gap Analysis Gateway**) is an enterprise-inspired cybersecurity investigation platform that consolidates fragmented security intelligence into a single analyst-centric workspace.
+
+Instead of treating findings as isolated events, THRAGG reconstructs relationships between entities, correlates intelligence across multiple security domains, visualizes attack progression, enables interactive replay of incidents, and produces executive-ready investigation reports.
+
+The platform is designed around real Security Operations Center (SOC) workflows, allowing analysts to move seamlessly from detection to investigation, correlation, reporting, and decision-making through a modular, offline-first architecture.
 
 ---
 
-# Architecture
+# Why THRAGG?
+
+Modern investigations often require analysts to switch between numerous security tools before understanding a single incident.
+
+THRAGG eliminates this fragmentation by providing a unified investigation platform capable of:
+
+- Correlating findings across multiple security domains
+- Visualizing relationships between infrastructure and findings
+- Reconstructing complete attack chains
+- Mapping activity to MITRE ATT&CK
+- Replaying incidents chronologically
+- Managing investigations through a dedicated case workspace
+- Generating executive-ready incident reports
+
+---
+
+# Core Features
+
+## Intelligence Analysis
+
+- Interactive Knowledge Graph
+- Attack Chain Reconstruction
+- Entity Resolution
+- Finding Correlation
+- Relationship Visualization
+- Timeline Analysis
+
+## Investigation Workspace
+
+- Case Management
+- Analyst Notes
+- Investigation Bookmarks
+- Context Panel
+- Session Overview
+
+## Threat Intelligence
+
+- MITRE ATT&CK Coverage
+- Risk Distribution
+- Security Posture Analysis
+- Domain Coverage
+- Recommendations Engine
+
+## Investigation Replay
+
+- Interactive Replay Engine
+- Timeline Scrubbing
+- Replay Controls
+- Attack Stage Navigation
+- Context Synchronization
+
+## Executive Reporting
+
+- Executive Report Builder
+- Report Composer
+- Report Preview
+- HTML Export
+- Markdown Export
+- JSON Export
+- TXT Export
+
+## Analyst Productivity
+
+- Global Intelligence Search - Command Palette - Keyboard Shortcuts - Global Filters - Offline First Operation
+
+---
+
+# Platform Architecture
 
 ```
-                 +----------------------+
-                 |      THRAGG          |
-                 |  Orchestrator Core   |
-                 +----------+-----------+
-                            |
-        -----------------------------------------------
-        |         |          |          |             |
-        |         |          |          |             |
- CyberRecon   Sentinel   AegisGovern  VulnScope   Future Modules
-     Lab        Forge         v2           |
-                                            |
-                                   OWASP ZAP Reports
+                  Security Modules
+ ┌────────────┬────────────┬────────────┬────────────┐
+ │CyberRecon  │Sentinel    │AegisGovern │VulnScope   │
+ │Lab         │Forge       │            │            │
+ └─────┬──────┴─────┬──────┴─────┬──────┴─────┬──────┘
+       │            │            │            │
+       └────────────┴────────────┴────────────┘
+                        │
+                 Intelligence Core
+                        │
+                 Entity Resolution
+                        │
+                  Relationship Engine
+                        │
+                 Correlation Engine
+                        │
+                 Attack Chain Builder
+                        │
+                Knowledge Graph Engine
+                        │
+                 Replay Engine
+                        │
+                Investigation Workspace
+                        │
+               Executive Report Builder
 ```
 
-THRAGG does **not** perform scanning.
+---
 
-Each module is responsible for its own analysis.
+# Dashboard Modules
 
-THRAGG only:
-
-* Executes modules
-* Validates outputs
-* Collects evidence
-* Routes files
-* Generates reports
-* Handles failures gracefully
+| Module | Purpose |
+|---------|---------|
+| Executive Overview | Investigation dashboard |
+| Security Posture | Overall security assessment |
+| Risk Distribution | Risk visualization |
+| Domain Coverage | Security domain analysis |
+| Knowledge Graph | Interactive entity relationships |
+| Attack Chains | Chronological attack reconstruction |
+| MITRE Coverage | ATT&CK technique mapping |
+| Traceability | Evidence traceability |
+| Entity Explorer | Entity investigation |
+| Finding Explorer | Finding analysis |
+| Activity Timeline | Investigation timeline |
+| Recommendations | Remediation guidance |
+| Case Workspace | Investigation management |
+| Replay Engine | Interactive attack replay |
+| Report Builder | Executive reporting |
+| Command Palette | Global intelligence search |
 
 ---
 
-# Current Modules
+# Technical Highlights
 
-| Module         | Purpose                    | Status    |
-| -------------- | -------------------------- | --------- |
-| CyberReconLab  | Network reconnaissance     | Supported |
-| SentinelForge  | Linux log analysis         | Supported |
-| AegisGovern    | Cloud security assessment  | Supported |
-| VulnScope      | Web application assessment | Supported |
-| Custom Modules | Via module contract        | Supported |
-
----
-
-# Repository Structure
-
-```
-THRAGG/
-│
-├── thragg.py
-├── modules/
-│
-├── core/
-│
-├── static_findings/
-│
-├── data/
-│
-├── README.md
-│
-└── requirements.txt
-```
-
-(The exact folder structure may evolve as additional modules are integrated.)
-
----
-
-# Supported Evidence Types
-
-Current evidence collection supports:
-
-* JSON
-* XML
-* HTML
-* CSV
-* TXT
-* Markdown
-* Images
-* Log files
-
-Evidence is automatically organized for reporting.
-
----
-
-# Report Generation
-
-THRAGG consolidates findings from every successfully executed module into a single report containing:
-
-* Executive Summary
-* Module Status
-* Findings
-* Evidence Inventory
-* Warnings
-* Errors
-* Execution Statistics
-* Processing Time
-
----
-
-# Error Handling
-
-THRAGG isolates failures between modules.
-
-If one module encounters an error:
-
-* Remaining modules continue executing
-* Errors are logged
-* Report generation still completes
-* Partial results remain available
-
-Warnings are treated as informational rather than execution failures.
-
----
-
-# Design Principles
-
-* Modular by design
-* No tight coupling
-* Independent projects
-* Stable interfaces
-* Lightweight orchestration
-* Extensible architecture
-* Defensive programming
-* Backward compatibility
+- Modular component architecture
+- EventBus-driven communication
+- Offline-first operation
+- Interactive SVG Knowledge Graph
+- Custom force-directed graph physics engine
+- Replay state machine
+- Unified intelligence indexing
+- Immutable investigation model
+- Enterprise report generation
+- Responsive dashboard architecture
 
 ---
 
 # Technology Stack
 
-* Python 3.13
-* Standard Library
-* Dataclasses
-* pathlib
-* typing
-* logging
-* json
-* xml
-* csv
+### Frontend
+
+- JavaScript (ES6)
+- HTML5
+- CSS3
+- SVG
+
+### Architecture
+
+- Component-Based Design
+- EventBus Architecture
+- Custom Graph Physics
+- Replay State Machine
+- Local Storage
+- Offline-First Design
 
 ---
 
-# Version
-
-Current Release
+# Project Structure
 
 ```
-v1.0.0
+frontend/
+│
+├── css/
+│
+├── js/
+│   ├── components/
+│   ├── utils/
+│   └── app.js
+│
+├── upload/
+│
+└── index.html
 ```
-
-### v1.0 Highlights
-
-* Stable orchestration engine
-* Module contract validation
-* Evidence routing
-* Unified reporting
-* Improved exception handling
-* Warning isolation
-* Production-ready project structure
-
----
-
-# Roadmap
-
-## v1.1
-
-* Multi-format OWASP ZAP parser
-* HTML support
-* JSON support
-* XML support
-* CSV support
-* Improved report formatting
-
-## v1.2
-
-* Parallel module execution
-* Plugin discovery
-* Configuration profiles
-
-## Future
-
-* Dashboard
-* MITRE ATT&CK correlation
-* Risk scoring
-* Executive reporting
-* Asset correlation engine
-* Threat graph visualization
 
 ---
 
@@ -234,48 +222,89 @@ Clone the repository:
 git clone https://github.com/anoop-808/THRAGG.git
 ```
 
-Move into the project directory:
+Navigate into the project:
 
 ```bash
 cd THRAGG
 ```
 
-Install dependencies:
+Start the local server (example):
 
 ```bash
-pip install -r requirements.txt
+python app.py
 ```
 
-Run THRAGG against the included sample evidence:
+or
 
 ```bash
-python thragg.py static_findings
+python server.py
 ```
+
+depending on your local setup.
 
 ---
 
-# Philosophy
+# Roadmap
 
-THRAGG is intentionally designed as an orchestration framework rather than another security scanner.
+## Completed (v4.0)
 
-Each integrated project performs domain-specific analysis while THRAGG focuses on coordination, evidence management, and consolidated reporting.
+- Interactive Knowledge Graph
+- Attack Replay Engine
+- Case Workspace
+- Context Panel
+- Command Palette
+- Global Intelligence Search
+- MITRE Coverage
+- Executive Report Builder
+- Investigation Timeline
+- Report Export Pipeline
 
-This separation of responsibilities improves maintainability, scalability, and long-term extensibility.
+## Future
+
+- STIX/TAXII Support
+- Sigma Rule Integration
+- IOC Import
+- Threat Feed Integration
+- SIEM Connectors
+- Multi-user Collaboration
+- PDF Export
+- AI-assisted Investigation
+
+---
+
+# Screenshots
+
+> Screenshots and workflow demonstrations will be added here.
+
+---
+
+# Project Vision
+
+THRAGG was built to demonstrate how modern Security Operations Center (SOC) investigations can be unified into a single analyst-focused platform.
+
+Rather than replacing existing security tools, THRAGG integrates intelligence across multiple security domains to provide contextual awareness, attack reconstruction, investigation replay, and executive reporting.
+
+The long-term vision is to evolve THRAGG into a modular investigation platform capable of supporting enterprise threat hunting, incident response, and cyber defense workflows.
 
 ---
 
 # License
 
-This project is released under the MIT License.
+Released under the MIT License.
 
 ---
 
 # Author
 
-**B. Giri Anoop**
+## B. Giri Anoop
 
-Cybersecurity Student
+Computer Science & Cybersecurity Undergraduate
 
-SOC Analyst Aspirant
+Focused on:
 
-Focused on Blue Team Operations, Security Automation, Cloud Security, Threat Hunting, and Defensive Engineering.
+- Security Operations Center (SOC)
+- Threat Hunting
+- Detection Engineering
+- Cloud Security
+- Defensive Engineering
+- Incident Response
