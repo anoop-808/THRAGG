@@ -20,11 +20,19 @@
 
 ---
 
-<p align="center">
+<div align="center">
 
-> 🚧 **Screenshots and workflow preview coming soon.**
+<img src="assets/logo/thragg-logo.png" width="700" alt="THRAGG Logo">
 
-</p>
+# THRAGG
+
+### Threat Hunting, Recon & Automated Gap Analysis Gateway
+
+**Enterprise Cybersecurity Investigation Platform**
+
+*Correlate • Investigate • Understand • Act*
+
+</div>
 
 ---
 
@@ -274,7 +282,51 @@ depending on your local setup.
 
 # Screenshots
 
-> Screenshots and workflow demonstrations will be added here.
+## Executive Overview
+
+![Executive Overview](assets/screenshots/01-executive-overview.png)
+
+---
+
+## Security Posture
+
+![Security Posture](assets/screenshots/02-security-posture.png)
+
+---
+
+## MITRE ATT&CK Coverage
+
+![MITRE Coverage](assets/screenshots/03-mitre-coverage.png)
+
+---
+
+## Entity Explorer
+
+![Entity Explorer](assets/screenshots/04-entity-explorer.png)
+
+---
+
+## Knowledge Graph
+
+![Knowledge Graph](assets/screenshots/05-knowledge-graph.png)
+
+---
+
+## Report Downloads
+
+![Report Downloads](assets/screenshots/06-report-downloads.png)
+
+---
+
+## Domain Coverage
+
+![Domain Coverage](assets/screenshots/07-domain-coverage.png)
+
+---
+
+## Attack Replay Engine
+
+![Replay Engine](assets/screenshots/08-replay-engine.png)
 
 ---
 
