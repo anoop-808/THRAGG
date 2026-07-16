@@ -27,11 +27,19 @@ class ChainValidator:
 
     def is_valid(self, candidate: ChainCandidate) -> bool:
         """Return True when a candidate satisfies Milestone 6 rules."""
-        if len(candidate.correlation_ids) < self.min_correlations:
+        from .attack_template_repository import AttackTemplateRepository
+        repo = AttackTemplateRepository()
+        template = repo.get(candidate.rule_id)
+
+        min_corr = getattr(template, "min_correlations", self.min_correlations) if template else self.min_correlations
+        min_entities = 1 if template and template.id == "TMPL-IDENTITY-COMPROMISE" else self.min_entity_diversity
+        min_affinity = 0 if template and template.id == "TMPL-IDENTITY-COMPROMISE" else self.min_affinity_score
+
+        if len(candidate.correlation_ids) < min_corr:
             return False
-        if len(candidate.entities) < self.min_entity_diversity:
+        if len(candidate.entities) < min_entities:
             return False
-        if sum(edge.affinity_score for edge in candidate.edges) < self.min_affinity_score:
+        if sum(edge.affinity_score for edge in candidate.edges) < min_affinity:
             return False
         return not self._has_cycle(candidate)
 

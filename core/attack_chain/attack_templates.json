@@ -4,73 +4,163 @@
       "id": "ATTACK-CHAIN-INITIAL-ACCESS-CREDENTIAL-ABUSE",
       "name": "Initial Access to Credential Abuse",
       "description": "Initial access followed by credential access or lateral movement indicates a plausible intrusion path.",
-      "mitre_chain": ["T1078", "T1021.004"],
-      "required_entities": ["HOST", "IDENTITY"],
+      "mitre_chain": [
+        "T1078",
+        "T1021.004"
+      ],
+      "required_entities": [
+        "HOST",
+        "IDENTITY"
+      ],
       "required_findings": [],
       "entry_point_type": "HOST",
       "confidence_base": 0.8,
       "severity": "HIGH",
-      "tags": ["initial-access", "credential-access", "lateral-movement"]
+      "tags": [
+        "initial-access",
+        "credential-access",
+        "lateral-movement"
+      ]
     },
     {
       "id": "ATTACK-CHAIN-PUBLIC-EXPOSURE-DATA-EXFILTRATION",
       "name": "Public Exposure to Data Exfiltration",
       "description": "Publicly exposed storage or database leading to data collection and exfiltration.",
-      "mitre_chain": ["T1530", "T1005", "T1041"],
-      "required_entities": ["CLOUD_RESOURCE", "STORAGE", "DATABASE"],
+      "mitre_chain": [
+        "T1530",
+        "T1005",
+        "T1041"
+      ],
+      "required_entities": [
+        "CLOUD_RESOURCE",
+        "STORAGE",
+        "DATABASE"
+      ],
       "required_findings": [],
       "entry_point_type": "CLOUD_RESOURCE",
       "confidence_base": 0.75,
       "severity": "CRITICAL",
-      "tags": ["public-exposure", "data-exposure", "exfiltration"]
+      "tags": [
+        "public-exposure",
+        "data-exposure",
+        "exfiltration"
+      ]
     },
     {
       "id": "ATTACK-CHAIN-PRIVILEGE-ESCALATION-LATERAL-MOVEMENT",
       "name": "Privilege Escalation to Lateral Movement",
       "description": "Privilege escalation on a host followed by lateral movement to other systems.",
-      "mitre_chain": ["T1068", "T1021", "T1080"],
-      "required_entities": ["HOST", "USER", "SERVICE"],
+      "mitre_chain": [
+        "T1068",
+        "T1021",
+        "T1080"
+      ],
+      "required_entities": [
+        "HOST",
+        "USER",
+        "SERVICE"
+      ],
       "required_findings": [],
       "entry_point_type": "HOST",
       "confidence_base": 0.85,
       "severity": "HIGH",
-      "tags": ["privilege-escalation", "lateral-movement", "host"]
+      "tags": [
+        "privilege-escalation",
+        "lateral-movement",
+        "host"
+      ]
     },
     {
       "id": "ATTACK-CHAIN-IDENTITY-COMPROMISE-CLOUD-RESOURCE",
       "name": "Identity Compromise to Cloud Resource Access",
       "description": "Compromised identity used to access cloud resources and escalate privileges.",
-      "mitre_chain": ["T1078.004", "T1526", "T1068"],
-      "required_entities": ["IDENTITY", "CLOUD_RESOURCE", "USER"],
+      "mitre_chain": [
+        "T1078.004",
+        "T1526",
+        "T1068"
+      ],
+      "required_entities": [
+        "IDENTITY",
+        "CLOUD_RESOURCE",
+        "USER"
+      ],
       "required_findings": [],
       "entry_point_type": "IDENTITY",
       "confidence_base": 0.8,
       "severity": "HIGH",
-      "tags": ["identity", "cloud", "privilege-escalation"]
+      "tags": [
+        "identity",
+        "cloud",
+        "privilege-escalation"
+      ]
     },
     {
       "id": "ATTACK-CHAIN-WEB-APPLICATION-EXPLOIT-DATABASE",
       "name": "Web Application Exploit to Database Access",
       "description": "Web application vulnerability exploited to gain database access and exfiltrate data.",
-      "mitre_chain": ["T1190", "T1190.001", "T1005", "T1041"],
-      "required_entities": ["APPLICATION", "DATABASE", "HOST"],
+      "mitre_chain": [
+        "T1190",
+        "T1190.001",
+        "T1005",
+        "T1041"
+      ],
+      "required_entities": [
+        "APPLICATION",
+        "DATABASE",
+        "HOST"
+      ],
       "required_findings": [],
       "entry_point_type": "APPLICATION",
       "confidence_base": 0.9,
       "severity": "CRITICAL",
-      "tags": ["web-application", "database", "exfiltration"]
+      "tags": [
+        "web-application",
+        "database",
+        "exfiltration"
+      ]
     },
     {
       "id": "ATTACK-CHAIN-SSH-BRUTEFORCE-LATERAL",
       "name": "SSH Brute Force to Lateral Movement",
       "description": "SSH brute force attack leading to initial access and lateral movement.",
-      "mitre_chain": ["T1110.001", "T1021.004", "T1080"],
-      "required_entities": ["HOST", "SERVICE", "USER"],
+      "mitre_chain": [
+        "T1110.001",
+        "T1021.004",
+        "T1080"
+      ],
+      "required_entities": [
+        "HOST",
+        "SERVICE",
+        "USER"
+      ],
       "required_findings": [],
       "entry_point_type": "SERVICE",
       "confidence_base": 0.7,
       "severity": "HIGH",
-      "tags": ["ssh", "brute-force", "lateral-movement"]
+      "tags": [
+        "ssh",
+        "brute-force",
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATTACK-CHAIN-IDENTITY-COMPROMISE",
+      "name": "Identity Compromise via MFA Gap",
+      "description": "Attacker exploits accounts lacking MFA to gain unauthorized access to identity infrastructure.",
+      "mitre_chain": [
+        "T1078"
+      ],
+      "required_entities": [
+        "IDENTITY"
+      ],
+      "required_findings": [],
+      "entry_point_type": "IDENTITY",
+      "confidence_base": 0.75,
+      "severity": "HIGH",
+      "tags": [
+        "identity",
+        "mfa-gap"
+      ]
     }
   ]
 }

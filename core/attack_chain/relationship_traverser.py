@@ -192,15 +192,17 @@ class RelationshipTraverser:
                     continue  # Avoid cycles
                 
                 # Prevent massive graph explosion among identities: allow at most ONE such edge
-                if (
-                    rel.source_entity_id.startswith("resolved-identity-") 
-                    and target_id.startswith("resolved-identity-") 
-                    and rel.relationship_type.name == "RELATED_TO"
-                ):
-                    # Check if we ALREADY have an identity-to-identity edge in rel_path
-                    # By checking if the current_id was reached via such an edge.
-                    # Since this is outgoing, if the last edge was also identity-related-to-identity, we skip.
-                    if depth > 0:
+                source_entity = self.entities.get(rel.source_entity_id)
+                target_entity = self.entities.get(target_id)
+                if source_entity and target_entity:
+                    s_type = source_entity.entity_type.value if hasattr(source_entity.entity_type, 'value') else str(source_entity.entity_type)
+                    t_type = target_entity.entity_type.value if hasattr(target_entity.entity_type, 'value') else str(target_entity.entity_type)
+                    if (
+                        s_type == "IDENTITY"
+                        and t_type == "IDENTITY"
+                        and rel.relationship_type.name == "RELATED_TO"
+                        and depth > 1
+                    ):
                         continue
 
                 queue.append((

@@ -28,8 +28,14 @@ class AttackChainValidator:
         """Validate a finalized chain, raising on the first violation."""
         if not chain.entry_point.strip():
             raise AttackChainValidationError("AttackChain.entry_point is required")
-        if len(chain.steps) < 2:
-            raise AttackChainValidationError("AttackChain requires at least two steps")
+        from .attack_template_repository import AttackTemplateRepository
+        repo = AttackTemplateRepository()
+        template = repo.get(chain.template_id)
+
+        min_steps = getattr(template, "min_steps", 2) if template else 2
+
+        if len(chain.steps) < min_steps:
+            raise AttackChainValidationError(f"AttackChain requires at least {min_steps} steps")
 
         for step in chain.steps:
             if not step.evidence:
