@@ -144,11 +144,12 @@
       ]
     },
     {
-      "id": "ATTACK-CHAIN-IDENTITY-COMPROMISE",
+      "id": "TMPL-IDENTITY-COMPROMISE",
       "name": "Identity Compromise via MFA Gap",
-      "description": "Attacker exploits accounts lacking MFA to gain unauthorized access to identity infrastructure.",
+      "description": "Attacker exploits accounts lacking MFA to gain unauthorized access to identity infrastructure",
       "mitre_chain": [
-        "T1078"
+        "T1078",
+        "T1078.004"
       ],
       "required_entities": [
         "IDENTITY"
@@ -157,10 +158,11 @@
       "entry_point_type": "IDENTITY",
       "confidence_base": 0.75,
       "severity": "HIGH",
-      "tags": [
-        "identity",
-        "mfa-gap"
-      ]
+      "tags": [],
+      "min_correlations": 1,
+      "min_steps": 1,
+      "min_entity_diversity": 1,
+      "min_affinity_score": 0
     }
   ]
 }

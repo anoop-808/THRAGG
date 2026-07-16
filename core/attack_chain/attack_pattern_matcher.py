@@ -269,6 +269,8 @@ class AttackPatternMatcher:
                 for entity in corr.matched_entities:
                     if "type" in entity:
                         candidate_entity_types.add(entity["type"])
+                    elif "entity_type" in entity:
+                        candidate_entity_types.add(entity["entity_type"])
 
         if not candidate_entity_types:
             return 0.0

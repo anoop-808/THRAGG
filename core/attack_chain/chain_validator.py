@@ -27,13 +27,22 @@ class ChainValidator:
 
     def is_valid(self, candidate: ChainCandidate) -> bool:
         """Return True when a candidate satisfies Milestone 6 rules."""
-        from .attack_template_repository import AttackTemplateRepository
-        repo = AttackTemplateRepository()
-        template = repo.get(candidate.rule_id)
-
-        min_corr = getattr(template, "min_correlations", self.min_correlations) if template else self.min_correlations
-        min_entities = 1 if template and template.id == "TMPL-IDENTITY-COMPROMISE" else self.min_entity_diversity
-        min_affinity = 0 if template and template.id == "TMPL-IDENTITY-COMPROMISE" else self.min_affinity_score
+        template_min = getattr(candidate, "template", None)
+        if template_min is not None and hasattr(template_min, "min_correlations"):
+            min_corr = template_min.min_correlations
+            min_entities = getattr(template_min, "min_entity_diversity", self.min_entity_diversity)
+            min_affinity = getattr(template_min, "min_affinity_score", self.min_affinity_score)
+        elif hasattr(candidate, "rule_id"):
+            from .attack_template_repository import AttackTemplateRepository
+            repo = AttackTemplateRepository()
+            template = repo.get(candidate.rule_id)
+            min_corr = getattr(template, "min_correlations", self.min_correlations) if template else self.min_correlations
+            min_entities = getattr(template, "min_entity_diversity", self.min_entity_diversity) if template else self.min_entity_diversity
+            min_affinity = getattr(template, "min_affinity_score", self.min_affinity_score) if template else self.min_affinity_score
+        else:
+            min_corr = self.min_correlations
+            min_entities = self.min_entity_diversity
+            min_affinity = self.min_affinity_score
 
         if len(candidate.correlation_ids) < min_corr:
             return False

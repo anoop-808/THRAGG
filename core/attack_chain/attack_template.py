@@ -28,6 +28,10 @@ class AttackTemplate:
     confidence_base: float
     severity: Severity
     tags: tuple[str, ...]
+    min_correlations: int = 2
+    min_steps: int = 2
+    min_entity_diversity: int = 2
+    min_affinity_score: int = 1
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "mitre_chain", tuple(self.mitre_chain))
@@ -48,4 +52,8 @@ class AttackTemplate:
             "confidence_base": self.confidence_base,
             "severity": self.severity.value,
             "tags": list(self.tags),
+            "min_correlations": self.min_correlations,
+            "min_steps": self.min_steps,
+            "min_entity_diversity": self.min_entity_diversity,
+            "min_affinity_score": self.min_affinity_score,
         }
