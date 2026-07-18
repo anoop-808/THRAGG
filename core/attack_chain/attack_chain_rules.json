@@ -12,13 +12,129 @@
     },
     {
       "rule_id": "ATTACK-CHAIN-INITIAL-ACCESS-CREDENTIAL-ABUSE",
-      "title": "Initial access to credential abuse",
+      "title": "Initial Access to Credential Abuse",
       "description": "Initial access followed by credential access or lateral movement indicates a plausible intrusion path.",
       "min_correlations": 2,
       "min_distinct_entities": 2,
-      "stage_sequence": ["INITIAL_ACCESS", "CREDENTIAL_ACCESS"],
-      "required_tags": [],
-      "mitre_techniques": ["T1078"]
+      "stage_sequence": [
+        "INITIAL_ACCESS",
+        "CREDENTIAL_ACCESS"
+      ],
+      "required_tags": [
+        "initial-access",
+        "credential-access",
+        "lateral-movement"
+      ],
+      "mitre_techniques": [
+        "T1078",
+        "T1021.004"
+      ]
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-PUBLIC-EXPOSURE-DATA-EXFILTRATION",
+      "title": "Public Exposure to Data Exfiltration",
+      "description": "Publicly exposed storage or database leading to data collection and exfiltration.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [
+        "public-exposure",
+        "data-exposure",
+        "exfiltration"
+      ],
+      "mitre_techniques": [
+        "T1530",
+        "T1005",
+        "T1041"
+      ]
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-PRIVILEGE-ESCALATION-LATERAL-MOVEMENT",
+      "title": "Privilege Escalation to Lateral Movement",
+      "description": "Privilege escalation on a host followed by lateral movement to other systems.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [
+        "privilege-escalation",
+        "lateral-movement",
+        "host"
+      ],
+      "mitre_techniques": [
+        "T1068",
+        "T1021",
+        "T1080"
+      ]
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-IDENTITY-COMPROMISE-CLOUD-RESOURCE",
+      "title": "Identity Compromise to Cloud Resource Access",
+      "description": "Compromised identity used to access cloud resources and escalate privileges.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [
+        "identity",
+        "cloud",
+        "privilege-escalation"
+      ],
+      "mitre_techniques": [
+        "T1078.004",
+        "T1526",
+        "T1068"
+      ]
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-WEB-APPLICATION-EXPLOIT-DATABASE",
+      "title": "Web Application Exploit to Database Access",
+      "description": "Web application vulnerability exploited to gain database access and exfiltrate data.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [
+        "web-application",
+        "database",
+        "exfiltration"
+      ],
+      "mitre_techniques": [
+        "T1190",
+        "T1190.001",
+        "T1005",
+        "T1041"
+      ]
+    },
+    {
+      "rule_id": "ATTACK-CHAIN-SSH-BRUTEFORCE-LATERAL",
+      "title": "SSH Brute Force to Lateral Movement",
+      "description": "SSH brute force attack leading to initial access and lateral movement.",
+      "min_correlations": 2,
+      "min_distinct_entities": 2,
+      "stage_sequence": [],
+      "required_tags": [
+        "ssh",
+        "brute-force",
+        "lateral-movement"
+      ],
+      "mitre_techniques": [
+        "T1110.001",
+        "T1021.004",
+        "T1080"
+      ]
+    },
+    {
+      "rule_id": "TMPL-IDENTITY-COMPROMISE",
+      "title": "Identity Compromise via MFA Gap",
+      "description": "Attacker exploits accounts lacking MFA to gain unauthorized access to identity infrastructure",
+      "min_correlations": 1,
+      "min_distinct_entities": 1,
+      "stage_sequence": [],
+      "required_tags": [
+        "identity"
+      ],
+      "mitre_techniques": [
+        "T1078",
+        "T1078.004"
+      ]
     }
   ]
 }

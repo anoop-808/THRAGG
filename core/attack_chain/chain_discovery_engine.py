@@ -38,9 +38,19 @@ class ChainDiscoveryEngine:
         edges = self._edges(tuple(correlations[item_id] for item_id in sorted(correlations)))
         adjacency = self._adjacency(correlations, edges)
         candidates: list[ChainCandidate] = []
+
+        # Only start traversal from roots (correlations with in-degree 0)
+        in_degree = {c_id: 0 for c_id in correlations}
+        for edge in edges:
+            in_degree[edge.to_correlation_id] += 1
+
+        roots = [c_id for c_id, degree in in_degree.items() if degree == 0]
+
+        # If there are cycles and no roots, fallback to sorted order
+        start_nodes = sorted(roots) if roots else sorted(correlations)
         seen: set[str] = set()
 
-        for correlation_id in sorted(correlations):
+        for correlation_id in start_nodes:
             if correlation_id in seen:
                 continue
             component = self._dfs(correlation_id, adjacency)
@@ -70,16 +80,56 @@ class ChainDiscoveryEngine:
             for right in correlations[index + 1:]:
                 for entity_id, entity_type in self._shared_entities(left, right):
                     first, second = sorted((left, right), key=stage_sort_key)
-                    edges.append(
-                        ChainEdge(
-                            from_correlation_id=first.id,
-                            to_correlation_id=second.id,
-                            shared_entity_id=entity_id,
-                            shared_entity_type=entity_type,
-                            affinity_score=affinity_score(entity_type),
-                            reason=f"Shared {entity_type} entity",
+                    # Attack chains should represent attacker progression.
+                    # Do not force single-correlation chains simply because they share stage/timestamp,
+                    # but also do not link them purely on shared entities if they have the exact same
+                    # stage, exact same timestamp, and exact same MITRE technique unless there's a reason to.
+                    # For now, allow progression if stages progress or timestamps progress.
+                    # If they happen at the same time and stage, we evaluate if they are actually the same technique.
+
+                    first_key = stage_sort_key(first)
+                    second_key = stage_sort_key(second)
+
+                    # Progression exists if:
+                    # 1. First stage < Second stage
+                    # 2. Or, stages equal but First time < Second time
+                    # 3. Or, stages equal, times equal, but they represent a sequence of DIFFERENT MITRE techniques
+                    # 4. Or, there is an explicit parent/child relationship in findings
+
+                    has_progression = False
+                    if first_key[0] < second_key[0]:
+                        has_progression = True
+                    elif first_key[0] == second_key[0]:
+                        if first_key[1] < second_key[1]:
+                            has_progression = True
+                        elif first_key[1] == second_key[1]:
+                            # Same stage, same time. Is there a logical sequence?
+                            if set(first.mitre) != set(second.mitre):
+                                has_progression = True
+                            elif set(first.supporting_findings) & set(second.supporting_findings):
+                                # If they share findings, they are part of the same *finding*.
+                                # While they don't represent sequential *progression* of an attack (since
+                                # they are the exact same stage, time, and technique), they are logically
+                                # clustered manifestations of the exact same event.
+                                # To group these without forming loops, we add a directed edge based on ID
+                                # to represent the cluster.
+                                #
+                                # WAIT: doing this on ALL shared identity events creates a massive 150+ node chain
+                                # because the same admin user logs into many systems. We should NOT build chains
+                                # just because they share an entity if there is no progression.
+                                has_progression = False
+
+                    if has_progression and first.id != second.id:
+                        edges.append(
+                            ChainEdge(
+                                from_correlation_id=first.id,
+                                to_correlation_id=second.id,
+                                shared_entity_id=entity_id,
+                                shared_entity_type=entity_type,
+                                affinity_score=affinity_score(entity_type),
+                                reason=f"Shared {entity_type} entity",
+                            )
                         )
-                    )
         return tuple(
             sorted(
                 edges,
@@ -111,7 +161,6 @@ class ChainDiscoveryEngine:
         adjacency = {correlation_id: set() for correlation_id in correlations}
         for edge in edges:
             adjacency[edge.from_correlation_id].add(edge.to_correlation_id)
-            adjacency[edge.to_correlation_id].add(edge.from_correlation_id)
         return adjacency
 
     def _dfs(self, start: str, adjacency: dict[str, set[str]]) -> set[str]:
@@ -166,7 +215,7 @@ def stage_sort_key(correlation: Correlation) -> tuple[int, str, str]:
 
 def _entity_map(correlation: Correlation) -> dict[str, str]:
     return {
-        str(entity["id"]): str(entity.get("type", "UNKNOWN"))
+        str(entity["id"]): str(entity.get("type", entity.get("entity_type", "UNKNOWN")))
         for entity in correlation.matched_entities
         if "id" in entity
     }

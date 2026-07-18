@@ -158,7 +158,9 @@
       "entry_point_type": "IDENTITY",
       "confidence_base": 0.75,
       "severity": "HIGH",
-      "tags": [],
+      "tags": [
+        "identity"
+      ],
       "min_correlations": 1,
       "min_steps": 1,
       "min_entity_diversity": 1,
