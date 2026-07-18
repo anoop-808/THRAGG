@@ -29,6 +29,7 @@ class RiskAssessment:
     recommendation: str
     created_at: str
     policy_version: str
+    label: str = ""
     priority_rank: int | None = None
 
     def __post_init__(self) -> None:
@@ -49,5 +50,6 @@ class RiskAssessment:
             "recommendation": self.recommendation,
             "created_at": self.created_at,
             "policy_version": self.policy_version,
+            "label": self.label,
             "priority_rank": self.priority_rank,
         }
