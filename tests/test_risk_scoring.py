@@ -207,6 +207,7 @@ def test_risk_assessment_is_immutable_specific_and_serializable():
         "recommendation",
         "created_at",
         "policy_version",
+        "label",
         "priority_rank",
     )
     assert assessment.to_dict()["contributions"][0]["factor_name"] == "severity"

@@ -96,17 +96,12 @@ class ExposureFactor:
         """Return the capped exposure contribution."""
         stages = _timeline_stages(chain)
         exposed = "INITIAL_ACCESS" in stages
-
-        reason = "Chain includes initial access" if exposed else "No initial access exposure found"
-
-        if not exposed:
-            mitre_techniques = chain.mitre_techniques
-            if "T1046" in mitre_techniques:
-                exposed = True
-                reason = "Publicly exposed service detected"
-
         score = 15 if exposed else 0
-
+        reason = (
+            "Chain includes initial access"
+            if exposed
+            else "No initial access exposure found"
+        )
         return (
             _contribution(
                 chain,
